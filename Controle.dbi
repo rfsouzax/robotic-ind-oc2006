@@ -1,0 +1,200 @@
+[Programmer]
+ToolName=
+[Memory]
+InitValue=FF
+InitSize=0
+[Breakpoint]
+number=0
+type0=0
+line0=143
+file0=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+address0=-1
+length0=1
+space0=0
+iscdt0=0
+cdt0=
+iscomp0=0
+comp0=0
+action0=3
+haseval0=0
+evalexp0=
+enable0=0
+type1=0
+line1=480
+file1=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+address1=3801
+length1=1
+space1=0
+iscdt1=0
+cdt1=
+iscomp1=0
+comp1=0
+action1=0
+haseval1=0
+evalexp1=
+enable1=0
+type2=0
+line2=497
+file2=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+address2=3879
+length2=1
+space2=0
+iscdt2=0
+cdt2=
+iscomp2=0
+comp2=0
+action2=0
+haseval2=0
+evalexp2=
+enable2=0
+type3=0
+line3=145
+file3=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+address3=2310
+length3=1
+space3=0
+iscdt3=0
+cdt3=
+iscomp3=0
+comp3=0
+action3=0
+haseval3=0
+evalexp3=
+enable3=1
+[51 Driver options]
+Link_UseMonitor=0
+Link_WriteableCode=1
+Link_OldMonitor=0
+Link_Baudrate=115
+Link_BreakSeq=Ext UART
+[Debug]
+LastVirtual=AT89S53
+Explore=1
+Information=0
+InfoSP=1
+ToolName=AT89S53
+ToolDll=
+InfoExpr=&
+SessionReal=0
+[trace]
+ContinualTrace=0
+NoTrace=1
+FlashingTrace=0
+TogglingTrace=0
+Rollingtrace=1
+ExtendedTrace=1
+Cycletime=0
+Filter=0
+Maxtrace=10
+ChangingTrace=0
+Relativetime=0
+Source=1
+A=0
+B=0
+ResetBeforeRun=0
+ToFile=0
+Graph=1
+File=
+FreqCycle=10
+[Watch]
+WatchNumber=8
+Watch0exp=indice
+Watch0file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch0info=-489-0-0-1-0-1-0-5-
+select=2
+showlocals=0
+Size1=135
+Watch1exp=temp
+Watch1file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch1info=-529-0-0-1-0-1-0-5-
+Watch2exp=m1
+Watch2file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch2info=-497-0-3-1-0-1-0-5-
+Watch3exp=m2
+Watch3file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch3info=-506-0-3-1-0-1-0-5-
+Watch4exp=posicao
+Watch4file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch4info=-514-0-0-1-0-1-0-5-
+Watch5exp=maximo
+Watch5file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch5info=-497-0-0-1-0-1-0-5-
+Watch6exp=furo
+Watch6file=c:\arquivos bkp pc 2\program«√o para rob‘ 2006\progs novos\controle\controle.c
+Watch6info=-171-0-0-1-0-1-0-5-
+Watch7exp=SBUF
+Watch7file=c:\documents and settings\pressione enter\meus documentos\rodrigo\controle_ aprende a caminhar\controle.c
+Watch7info=-509-0-0-1-0-1-0-5-
+[Locals]
+Size1=80
+PercentOf=0.500000
+[XData Segment]
+NbSegment=2
+Start[0]=0
+End[0]=65535
+Type[0]=0
+Start[1]=0
+End[1]=65535
+Type[1]=0
+[Code Segment]
+NbSegment=2
+Start[0]=0
+End[0]=65535
+Type[0]=0
+Start[1]=0
+End[1]=65535
+Type[1]=0
+[tracewatch]
+Nbtrace=0
+[AT89S53\UART]
+fEnable-1=0
+ParityCOM-1=0
+AsciiHex-1=0
+SpyTrm-1=1
+SpyRec-1=0
+[Port 3]
+cx=163
+cy=197
+x=663
+y=18
+[Port 0]
+cx=163
+cy=197
+x=340
+y=18
+[UART]
+cx=661
+cy=530
+x=16
+y=21
+[Port 1]
+cx=163
+cy=197
+x=623
+y=212
+[CODE]
+cx=436
+cy=291
+x=44
+y=54
+select=0
+top=0
+line=1
+Addr=71
+Symb=77
+Hex=63
+Desa=231
+Cove=100
+Hexa=1
+Info=254
+NbVal=8
+[Port 2]
+cx=163
+cy=199
+x=22
+y=45
+[Flags]
+cx=661
+cy=302
+x=22
+y=29

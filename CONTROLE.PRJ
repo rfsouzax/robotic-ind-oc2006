@@ -1,0 +1,728 @@
+RIDE Project File
+File Version=3
+[BN]
+Build=BN737-51
+[Ref]
+Ref=0
+[Type]
+Type=0
+[Environment]
+Begin Group CompEdit
+EditCodeCoverage=0
+TestMakeDate=1
+Promptrebuild=0
+DebugMessage=1000
+Promptdirtyoptions=0
+Prompttoreloadfiles=0
+Promptsucsorfail=0
+Promptenddebug=1
+Promptsave=0
+End Group CompEdit
+Begin Group Edit
+DocExts=*.pdf;*.htm;*.doc
+DocInChild=1
+InsertSpace=0
+Showinfo=1
+Showtool=1
+Showpath=1
+Promptbeforedelete=0
+Oemtoascii=0
+Decalage=2
+Undonumber=10
+TabStop=3
+End Group Edit
+Begin Group Font
+Height=12
+Name=courier new
+Default=1
+End Group Font
+Begin Group Colors
+Data=14745599
+Code=15658705
+ColorBackground=1
+Error=255
+String=16711680
+Operator=8421504
+Key=0
+Comment=8421376
+Control=32768
+Numeric=16711680
+Identifier=8388608
+Highlight=1
+End Group Colors
+End Options Environment
+
+[Directories]
+Begin Group Directories
+Source=
+LibOpti=c:\RIDE\Lib\CCLib
+List=
+Object=
+Lib=c:\RIDE\Lib
+Include=%RIDEDIR%\Inc;%RIDEDIR%\Inc\51
+End Group Directories
+End Options Directories
+
+[Targets]
+Number=1
+
+Name=80C51
+DllName=..\..\..\..\..\RIDE\BIN\target51.dll
+Begin Group 80C51
+MicroName=AT89S53
+VonNeumann=0
+Harward=1
+Postoptimizing=0
+CaseSensitive=0
+MonitorMode=0
+BankedMode=0
+LaunchMode=0
+End Group 80C51
+
+
+[Magics]
+Number=0
+
+
+[Nets]
+Nb Nets=0
+
+[Tools]
+Number=13
+
+Path=..\..\..\..\..\RIDE\BIN\ccomp51.dll
+Name=CodeCompressor51
+SrcExt=
+ObjExt=
+Target Translate=2
+Begin Options CodeCompressor51
+Begin Group Save
+SaveBIN=0
+SaveHEX=0
+SaveOMF=0
+End Group Save
+Begin Group Peephole
+Valid=1
+Peephole=%RIDEDIR%\EXAMPLES\8051\PEEP51.RPS
+End Group Peephole
+Begin Group Factorization
+MaxFactoDeep=?
+MaxFactoSz=?
+MaxFactoNr=?
+ConfirFacto=1
+End Group Factorization
+Begin Group Inlining
+MaxPostBlockNr=?
+ConfirmPostBlock=0
+MaxInlineNr=?
+ConfirmInline=1
+MaxPreBlockNr=?
+ConfirmPreBlock=0
+End Group Inlining
+Begin Group General
+ModeDos=0
+More=
+StandaloneAnchored=0
+StandaloneAsk=0
+StandaloneDiscard=1
+NewCode=0
+SameCode=1
+LogFile=0
+VerboseLevel=1
+Verbose=0
+ModeInteractive=0
+Add2Project=1
+AutoPeep=1
+AutoFacto=1
+AutoInline=1
+ModeAuto=1
+End Group General
+End Options CodeCompressor51
+
+Path=..\..\..\..\..\RIDE\BIN\lx51v32.dll
+Name=LX51
+SrcExt=*.obj
+ObjExt=*.aof
+Target Translate=1
+Begin Options LX51
+Begin Group Rom
+More=
+End Group Rom
+Begin Group Startup
+Initcode=
+Inittimer1=E8
+Initramsize=128
+DonotGenerateoruse=0
+GenerateSpecific=0
+UseDefault=1
+End Group Startup
+Begin Group More
+More=
+End Group More
+Begin Group Monitor
+FlipTRAP=0
+Crystal=14.7456
+Baudrate=115
+XEVABoard=1
+PhytecBoard=0
+Codewriteable=1
+WithoutPrescaler=0
+RomMonitor=0
+UartTimer2=0
+UartExt=1
+UartStd=0
+Rack=0
+UseOLDmonitor=0
+UseTImonitor=0
+Usemonitor=0
+End Group Monitor
+Begin Group Kernel
+Divide_3_T=60
+Divide_2_T=10
+Divide_1_T=100
+Tim0_Init_T=1000
+KernelSemap=0
+KernelDebug=0
+KernelHuge=0
+KernelSmall=1
+KernelTiny=0
+UseKernel=0
+EnableDef_T=1
+End Group Kernel
+Begin Group Flashing
+StatVarROM=1
+Flsfile=
+ResBit=0
+ResBData=0
+ResData=0
+Startaddr=8000
+Lockedmode=0
+UseFlash=0
+Nb Obj=1
+c:\documents?and?settings\pressione?enter\meus?documentos\rodrigo\controle_?aprende?a?caminhar\controle.obj
+Nb Flash=0
+End Group Flashing
+Begin Group Bank switching
+Editequation=?B_CURRENTBANK
+Editmacro=mov	A,?B_CURRENTBANK§¤anl	P1,#0f8h§¤orl	P1,A
+Maxaddr=FFFF
+Minaddr=8000
+Maxpage=32
+Genmacro=1
+Usebank=0
+Flip=0
+Noplm=1
+Nb Modules=28
+CONTROLE C:\DOCUMENTS?AND?SETTINGS\PRESSIONE?ENTER\MEUS?DOCUMENTOS\RODRIGO\CONTROLE_?APRENDE?A?CAMINHAR\CONTROLE.OBJ 2147483647
+C0S c:\RIDE\Lib\RC51S.LIB 2147483647
+MV_I02SK4 c:\RIDE\Lib\RC51S.LIB 2147483647
+MV_I12SK4 c:\RIDE\Lib\RC51S.LIB 2147483647
+MV_RG2I04 c:\RIDE\Lib\RC51S.LIB 2147483647
+MV_RG2I14 c:\RIDE\Lib\RC51S.LIB 2147483647
+MV_STK4 c:\RIDE\Lib\RC51S.LIB 2147483647
+PRINT2 c:\RIDE\Lib\RC51S.LIB 2147483647
+ATOL c:\RIDE\Lib\RC51S.LIB 2147483647
+PUTCHAR c:\RIDE\Lib\RC51S.LIB 2147483647
+MULL c:\RIDE\Lib\RC51S.LIB 2147483647
+RSTSTK4 c:\RIDE\Lib\RC51S.LIB 2147483647
+ISDIG c:\RIDE\Lib\RC51S.LIB 2147483647
+ISSPACE c:\RIDE\Lib\RC51S.LIB 2147483647
+_C_ITIM1 c:\RIDE\Lib\RC51S.LIB 2147483647
+HPD c:\RIDE\Lib\RC51S.LIB 2147483647
+_C_INITD c:\RIDE\Lib\RC51S.LIB 2147483647
+_C_IDATALEN c:\RIDE\Lib\RC51S.LIB 2147483647
+XPGN0_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+XPGN1_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+IPGN0_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+IPGN1_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+PGN0_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+PGN1_INC c:\RIDE\Lib\RC51S.LIB 2147483647
+XPGN0 c:\RIDE\Lib\RC51S.LIB 2147483647
+XPGN1 c:\RIDE\Lib\RC51S.LIB 2147483647
+IPGN0 c:\RIDE\Lib\RC51S.LIB 2147483647
+IPGN1 c:\RIDE\Lib\RC51S.LIB 2147483647
+Nb Pages=1
+0 1 0
+End Group Bank switching
+Begin Group Listing
+LKIX=1
+LKPARTIALMAP=0
+LKMAP=1
+End Group Listing
+Begin Group Linker
+MicroName=AT89S53
+SizeXdata=65536
+SizeCode=65536
+VonNeumann=0
+Monitor=0
+AbsCode=0000
+AdrBit=0000
+AdrIdata=0000
+AdrData=0000
+AdrXdata=0000
+AdrCode=0000
+Extstack=256
+Sizeprintf=16
+Inittimer1=E8
+Initramsize=256
+Ramsize=256
+PostOpt=0
+P8WE=0
+BIN=0
+HEX=1
+EXTEND=0
+LKKRSEM=0
+LKKRDEB=0
+KKRH=0
+KKRX=0
+KKRY=0
+LKDEB=1
+LKKR=0
+LKLIB=1
+End Group Linker
+End Options LX51
+
+Path=..\..\..\..\..\RIDE\BIN\ma51v32.dll
+Name=MA51
+SrcExt=*.a51;*.x51;*.inc;*.src
+ObjExt=*.obj
+Target Translate=0
+Begin Options MA51
+Begin Group Object
+Reg3=0
+Reg2=0
+Reg1=0
+Reg0=1
+PostOpt=0
+DebugOE=0
+DebugStd=1
+NoDebug=0
+Object=1
+End Group Object
+Begin Group Listing
+Pagewidth=80
+Pagelength=60
+Formfeed=0
+Xref=1
+Symbols=1
+Print=1
+Listinclude=0
+Cond=1
+List=1
+Gen=1
+End Group Listing
+Begin Group Set
+Sets=
+End Group Set
+Begin Group Source
+Flip8051InstSet=0
+RaisonanceSyntax=0
+ASM51Syntax=1
+Macro=0
+Mod51=0
+End Group Source
+End Options MA51
+
+Path=..\..\..\..\..\RIDE\BIN\mamxv32.dll
+Name=MAMX
+SrcExt=*.a51;*.inc
+ObjExt=*.obj
+Target Translate=0
+Begin Options MAMX
+Begin Group Object
+Reg3=0
+Reg2=0
+Reg1=0
+Reg0=1
+PostOpt=0
+DebugOE=0
+DebugStd=1
+NoDebug=0
+Object=1
+End Group Object
+Begin Group Listing
+Pagewidth=80
+Pagelength=60
+Formfeed=0
+Xref=1
+Symbols=1
+Print=1
+Listinclude=0
+Cond=1
+List=1
+Gen=1
+End Group Listing
+Begin Group Set
+Sets=
+End Group Set
+Begin Group Source
+Flip8051InstSet=0
+RaisonanceSyntax=0
+ASM51Syntax=1
+Macro=0
+Mod51=0
+End Group Source
+End Options MAMX
+
+Path=..\..\..\..\..\RIDE\BIN\rc51v32.dll
+Name=RC51
+SrcExt=*.c;*.h
+ObjExt=*.obj
+Target Translate=0
+Begin Options RC51
+Begin Group Messages
+Maxwarn=25
+Maxerr=25
+Warning=2
+End Group Messages
+Begin Group Optimizer
+PostOpt=0
+Optimlevel=7
+Optsize=1
+Optspeed=0
+End Group Optimizer
+Begin Group Registers
+Registerbank=0
+Regparms=1
+Aregs=1
+End Group Registers
+Begin Group Memory Model
+MicroName=8XC52
+SRMulDiv=0
+RisMulDiv=0
+StdMulDiv=1
+Flip8051=0
+Phi51Rd=0
+Xram=0
+Useexternal=0
+None=1
+Mod517=0
+ModAtm=0
+Modamd=0
+Mod517nodp8=0
+Mod517noau=0
+Romlarge=1
+Romsmall=0
+Romcompact=0
+Huge=0
+Large=0
+Small=1
+Compact=0
+End Group Memory Model
+Begin Group Object
+ViaAsm=0
+Intvector=0
+Interval=8
+Maxargs=15
+Interruptvectors=1
+Order=0
+ObjectExtended2=0
+ObjectExtended=1
+Debug=0
+Object=1
+Src=0
+End Group Object
+Begin Group Listing 
+Pagewidth=80
+Pagelength=60
+Formfeed=0
+Symbols=1
+Print=1
+PrePrint=0
+Listinclude=0
+Cond=1
+Code=1
+End Group Listing 
+Begin Group Defines
+Defines=
+End Group Defines
+Begin Group Code generation
+MonitorSafe=0
+EnumInt=0
+Unsignedchar=1
+Intpromote=1
+Generic=1
+Initstatic=0
+Auto=0
+End Group Code generation
+Begin Group Floating point
+Ieeerevers=0
+Ieeestd=0
+Bcdldouble=0
+Bcddouble=0
+Bcdfloat=0
+Bcdall=0
+Nofloat=1
+End Group Floating point
+Begin Group Source
+Strict=1
+Tolerant=0
+SueOpt=0
+Extend=1
+Ansi=0
+End Group Source
+End Options RC51
+
+Path=..\..\..\..\..\RIDE\BIN\rcmxv32.dll
+Name=RCMX
+SrcExt=*.c;*.h
+ObjExt=*.obj
+Target Translate=0
+Begin Options RCMX
+Begin Group Messages
+Maxwarn=25
+Maxerr=25
+Warning=2
+End Group Messages
+Begin Group Optimizer
+PostOpt=0
+Optimlevel=7
+Optsize=0
+Optspeed=1
+End Group Optimizer
+Begin Group Registers
+Registerbank=0
+Regparms=1
+Aregs=1
+End Group Registers
+Begin Group Memory Model
+Paged=0
+Linear=1
+Stack16=0
+Stack8=1
+Large=0
+Small=1
+Compact=0
+End Group Memory Model
+Begin Group Object
+ViaAsm=0
+Intvector=0
+Interval=8
+Maxargs=15
+Interruptvectors=1
+Order=0
+Debug=1
+Object=1
+Src=0
+End Group Object
+Begin Group Listing 
+Pagewidth=80
+Pagelength=60
+Formfeed=0
+Symbols=1
+Print=1
+PrePrint=0
+Listinclude=0
+Cond=1
+Code=1
+End Group Listing 
+Begin Group Defines
+Defines=
+End Group Defines
+Begin Group Code generation
+Unsignedchar=1
+Intpromote=1
+Generic=1
+Initstatic=0
+Auto=0
+End Group Code generation
+Begin Group Floating point
+Ieeerevers=0
+Ieeestd=0
+Nofloat=1
+End Group Floating point
+Begin Group Source
+SueOpt=0
+Extend=1
+Ansi=0
+End Group Source
+End Options RCMX
+
+Path=..\..\..\..\..\RIDE\BIN\lxmxv32.dll
+Name=RLMX
+SrcExt=*.obj
+ObjExt=*.aof
+Target Translate=1
+Begin Options RLMX
+Begin Group Monitor
+Crystal=14.7456
+Baudrate=115
+Codewriteable=1
+UartExt=1
+UartStd=0
+Usemonitor=0
+End Group Monitor
+Begin Group Kernel
+Divide_3_T=60
+Divide_2_T=10
+Divide_1_T=100
+Tim0_Init_T=2000
+KernelSemap=0
+KernelDebug=0
+KernelHuge=0
+KernelSmall=1
+KernelTiny=0
+UseKernel=0
+EnableDef_T=1
+End Group Kernel
+Begin Group More
+More=
+End Group More
+Begin Group Linker
+AddrXdata=0000
+AddrBit=00
+AddrIdata=00
+AddrData=00
+AddrHdata=000000
+AddrCode=000000
+LKIX=1
+Pagewidth=80
+Pagelength=60
+Inittimer1=FB
+InitRamsize=512
+Ramsize=512
+Formfeed=0
+HEX=0
+LKDEB=1
+LKLIB=1
+End Group Linker
+End Options RLMX
+
+Path=..\..\..\WINDOWS\download.exe
+Name=MSC1210_LOADER
+SrcExt=*.aof
+ObjExt=*.tst
+Target Translate=0
+Begin Options MSC1210_LOADER
+Begin Group Options
+Filter=
+Command line=/F{NODE3}.hex /X11 /P1
+IsFilter=0
+IsPrompt=1
+End Group Options
+End Options MSC1210_LOADER
+
+Path=..\..\..\..\..\RIDE\BIN\OROM.exe
+Name=OROM
+SrcExt=*.aof
+ObjExt=*.*
+Target Translate=0
+Begin Options OROM
+Begin Group Options
+Filter=
+Command line={NODE} /AOF /115
+IsFilter=0
+IsPrompt=1
+End Group Options
+End Options OROM
+
+Path=..\..\..\..\..\RIDE\BIN\lib51v32.dll
+Name=LIBMAN51
+SrcExt=
+ObjExt=
+Target Translate=0
+Begin Options LIBMAN51
+End Options LIBMAN51
+
+Path=..\..\..\..\..\RIDE\BIN\libxav32.dll
+Name=LIBMANMX
+SrcExt=
+ObjExt=
+Target Translate=0
+Begin Options LIBMANMX
+End Options LIBMANMX
+
+Path=..\..\..\..\..\RIDE\BIN\oh16v32.dll
+Name=OH16
+SrcExt=*.aof
+ObjExt=*.hex
+Target Translate=0
+Begin Options OH16
+End Options OH16
+
+Path=..\..\..\..\..\RIDE\BIN\oh51v32.dll
+Name=OH51
+SrcExt=*.aof
+ObjExt=*.hex
+Target Translate=0
+Begin Options OH51
+End Options OH51
+
+
+[Nodes]
+App Number=1
+Name=controle.aof
+Type=0
+Tool Ref=LX51
+Info Code=3873
+Info XData=0
+Info Data=1700
+Target Ref=80C51
+Format Ref=OMF51
+Use Local=0
+Nb Nodes=1
+Node Begin
+Relative Path=controle.c
+Type=0
+Tool Ref=RC51
+Format Ref=
+Nb Dep=6
+Dependance=c:\RIDE\Inc\51\reg52.h
+Dependance=c:\RIDE\Inc\stdio.h
+Dependance=c:\RIDE\Inc\stdarg.h
+Dependance=c:\RIDE\Inc\51\MAIN_C51.h
+Dependance=c:\RIDE\Inc\stdlib.h
+Dependance=c:\RIDE\Inc\alloc.h
+Info Code=1801
+Info Const=582
+Info XData=0
+Info PData=0
+Info Data=18
+Info IData=188
+Info Bit=4
+Use Local=0
+Do Link=1
+Do Translate=1
+Do Load=0
+Nb Nodes=0
+MakeDate=-937503237
+Node End
+Do Translate=1
+PostLinker Ref=
+
+
+[Desktop Files]
+Nb Desktop Files=1
+c:\documents?and?settings\pressione?enter\meus?documentos\rodrigo\controle_?aprende?a?caminhar\controle.c (0,0-661,302) 137
+
+
+[Closed Files]
+Nb Closed Files=1
+c:\ride\examples\8051\general\rtos\tutorial\time\time.c (0,0-0,0) 0
+
+
+[Dim Views]
+Nb Dim Views=13
+0 (0,0-0,0)
+1 (0,0-0,0)
+2 (0,0-0,0)
+3 (0,0-0,0)
+4 (44,54-688,345)
+5 (0,0-0,0)
+6 (0,0-0,0)
+7 (0,0-0,0)
+8 (0,0-0,0)
+9 (0,0-0,0)
+10 (0,0-0,0)
+11 (0,0-0,0)
+12 (0,0-0,0)
+
+[DebugTool]
+Debug=
+
+[Project Rect]
+(0,0-0,0)
+
+[LastSel]
+LastAOF=c:\documents and settings\pressione enter\meus documentos\rodrigo\controle_ aprende a caminhar\controle.aof
+

@@ -1,0 +1,2008 @@
+RC51 COMPILER V03.03.37,  CONTROLE                05/24/07  10:54:36  PAGE  1
+
+QCW(0x00003F32)
+
+WIN32 RC51 COMPILER V03.03.37, COMPILATION OF MODULE CONTROLE  
+OBJECT MODULE PLACED IN c:\documents and settings\pressione enter\meus documento
+            -s\rodrigo\controle_ aprende a caminhar\controle.obj
+COMPILER INVOKED BY: RC51.EXE C:\DOCUMENTS AND SETTINGS\PRESSIONE ENTER\MEUS DOC
+            -UMENTOS\RODRIGO\CONTROLE_ APRENDE A CAMINHAR\CONTROLE.C OBJECT(C:\D
+            -OCUMENTS AND SETTINGS\PRESSIONE ENTER\MEUS DOCUMENTOS\RODRIGO\CONTR
+            -OLE_ APRENDE A CAMINHAR\CONTROLE.OBJ) PIN(C:\RIDE\INC;C:\RIDE\INC\5
+            -1) PIN(C:\RIDE\INC\51\) NOAM PR(C:\DOCUMENTS AND SETTINGS\PRESSIONE
+            - ENTER\MEUS DOCUMENTOS\RODRIGO\CONTROLE_ APRENDE A CAMINHAR\CONTROL
+            -E.LST) CD SB OE(1) SM OT(7,SIZE) FP(NOFLOAT) PW(80) NOIS UNSIGNEDCH
+            -AR ET(CHAR) 
+
+stmt level    source
+   1          #include<reg52.h>
+   2          #include<stdio.h>
+   3          #include<stdlib.h>
+   4          
+   5          /////////////////////MEUS PINOS////////////////////////
+   6          
+   7          //para o controle
+   8          sbit b_esquerda	= P1^3;
+   9          sbit b_frente 		= P1^4;
+  10          sbit b_direita		= P1^5;
+  11          sbit b_traz			= P1^6;
+  12          sbit b_acao       = P1^7;
+  13          sbit b_start      = P3^2;
+  14          
+  15          sbit luz 	= P3^4;		//Sinal luminoso em nivel alto=1 apagado
+  16          sbit out_d1 = P2^4;		//verifica qndo cada driver estará em funcion
+            -amento
+  17          sbit out_d2 = P0^6;		//verifica qndo cada driver estará em funcion
+            -amento
+  18          sbit out_d3 = P0^5;		//verifica qndo cada driver estará em funcion
+            -amento
+  19          sbit botao0 = P0^0;		//botao externo
+  20          sbit botao1 = P0^1;		//botao externo
+  21          sbit trg_d2 = P0^7;		//Trigger driver 2
+  22          sbit trg_d1 = P2^0;		//Trigger driver 1
+  23          sbit sirene = P1^0;     //sirene
+  24          sbit bomba1 = P1^2;		//saida da bomba 1 que joga ahua pra dentro
+  25          sbit bomba2 = P1^1;		//saida que ativa a bomba que joga agua para 
+            -fora do reservatório
+  26          sbit sensor = P3^3;     //entrada do sensor000000
+  27          
+  28          /////////////////////MINHAS VARIAVEIS//////////////////////////
+  29          long unsigned distancia;
+  30          long unsigned fuso=9000;
+  31          
+  32          unsigned char dado=0;
+  33          signed char indice=0;
+  34          bit enable=0;
+  35          bit motor;
+  36          bit motores=0;
+  37          bit autonomo=0;
+  38          int posicao=0;			//variavel para posicionar as distancias depois d
+            -e serem colhidas
+  39          int maximo=0;
+  40          
+  41          /////////////////////////MATRIZ///////////////
+  42          idata unsigned char temp[12];			//matriz para armazenamento de dis
+            -tancias recebidas
+  43          idata signed long m1[22];
+  44          idata signed long m2[22];
+  45          
+  46          /////////////////////MINHAS ROTINAS////////////////////////////
+  47          void ler_serial(void) interrupt 4;
+  48          
+  49          void motor_a();						//motores para automaticos
+  50          
+  51          void espera_1();						//rotina para esperar cada motor executar se
+            -u movimento
+  52          void espera_2();
+  53          void espera_3();
+  54          
+  55          void motor3_c();
+  56          void motor3_cf();
+  57          void motor3_b();
+  58          void motor3_bf();
+  59          
+  60          void time(int h);						//rotina de tempo aproximadamente 1/2 segun
+            -do
+  61          void posicao_driver();				//rotina que solicita a captura a posiçã
+            -o do driver
+  62          
+  63          void furar();							//rotina de furação completa
+  64          
+  65          void automatico();
+  66          void scanear_controle();
+  67          void frente();
+  68          void direita();
+  69          void esquerda();
+  70          void traz();
+  71          
+  72          /////////////////////////////////MEU PROGRAMA PRINCIPAL///////////
+            -////////////////////
+  73          void main (void)
+  74          {
+  75   1      	//inicialização dos atuadores do robo (tudo desativado)
+  76   1      	bomba1=0;					//mantem a bomba1 desligada
+  77   1      	bomba2=0;					//mantem a bomba2 desligada
+  78   1      	sirene=0;					//desliga a sirene
+  79   1      	luz=1; 						//desliga lampada
+  80   1      	trg_d1=0;					//inicializa os trigger's em zero
+  81   1      	trg_d2=0;
+  82   1      
+  83   1      	//inicializazção da serial = 9600
+  84   1      	PCON = 0;
+  85   1      	TCON = 0x40;				//habilita o uso do timer do MC
+  86   1      	TH1  = 0xFD;				//timer 1 com valor respectivo p/ baud rate de 96
+            -00
+  87   1      	TMOD = 0x20;				//programa timer em modo 1 com auto-reload
+  88   1      	SCON = 0x52;				//habilita modo1 da serial comunicação assincrona
+            -, seta bit REN e TI
+  89   1      
+  90   1      	//inicialização de interrupções Geral = Serial = Externa1
+  91   1      	EA=1;   						//seta bit que habilita todas interrupções
+  92   1      	ES=0;							//deixa interrupção serial desabilitada no inicio
+  93   1      //	EX1=0;						//desabilita a interrupção externa pelo pino 13 P3^
+            -3 timer 1
+  94   1      	PS=1;							//define a interrupção serial no grupo de alta priori
+            -dade
+  95   1      	PX1=0;						//define a interrupção externa1 P3^3 no grupo de baix
+            -a prioridade
+  96   1      
+  97   1      	//Diminui o consumo de corrente de todos os Drivers, deixando os 
+            -motores desacionados
+  98   1      	printf("1ST1 ");
+  99   1      	printf("2ST1 ");
+ 100   1      	printf("3ST1 ");
+ 101   1      	printf("4ST1 ");
+ 102   1      
+ 103   1      	while (1)
+ 104   1      	{
+ 105   2      		while(b_acao && autonomo)
+ 106   2      			{
+ 107   3      				printf("1ST0 ");
+ 108   3      				printf("2ST0 ");			//se for a segunda passagem por essa parte 
+            -do programa o robo irá	
+ 109   3      	  		 	automatico();				//repetir passos que já estejam gravados n
+            -a memória
+ 110   3      	 		}
+ 111   2      		while(b_start==1)					 //botão Start
+ 112   2      			{
+ 113   3      				while(b_start==1);		//talvez um time antes dessa linha de temp
+            -o
+ 114   3      				time(2);						//espera um monte de segundos
+ 115   3      				//habilita perfifericos
+ 116   3      //	sensor	EX1=1;						//habilita a interrupção externa pelo pino 1
+            -3 P3^3 timer 1
+ 117   3      				printf("1ST0 ");
+ 118   3      				printf("2ST0 ");
+ 119   3      				time(1);
+ 120   3      				
+ 121   3      				scanear_controle();
+ 122   3      				time(1);
+ 123   3      				while(b_start==1);
+ 124   3      				automatico();
+ 125   3      
+ 126   3         			//desabilita perfifericos
+ 127   3      				luz=1;
+ 128   3      				sirene=0;
+ 129   3      				printf("1ST1 ");
+ 130   3      				printf("2ST1 ");
+ 131   3      			}
+ 132   2         	while(botao0==1)				//Botão esquerdo no Robô Destrava os Motor
+            -es
+ 133   2      			{
+ 134   3      				printf("1ST1 ");
+ 135   3      				printf("2ST1 ");
+ 136   3      				printf("3ST1 ");
+ 137   3      				printf("4ST1 ");
+ 138   3      			}
+ 139   2       	}
+ 140   1      }
+ 141          void scanear_controle()
+ 142          {
+ 143   1      	while(b_start==0) //encontrar uma ocasião que trava na linha do s
+            -caneamento!!!!!
+ 144   1      		{
+ 145   2      			luz=0;
+ 146   2      			printf("1K 1PZ ");
+ 147   2      			printf("2K 2PZ ");
+ 148   2      			if(b_frente) frente();
+ 149   2      			if(b_esquerda) esquerda();
+ 150   2      			if(b_direita) direita();
+ 151   2      			if(b_traz) traz();
+ 152   2      			if(b_acao) 
+ 153   2      				{
+ 154   3      					furar();				//ao acionar o botão acao, realiza a simulação do
+            - furo e retorna
+ 155   3      					time(6);				//espera tempo curto
+ 156   3      					automatico();     //vai para rotina que retorna o robo automa
+            -ticamente para sua posição de origem, e demostra todo trajeto grava
+            -do por uma vez.
+ 157   3      				}
+ 158   2      		}
+ 159   1      }
+ 160          void frente()
+ 161          {
+ 162   1      	time(1);
+ 163   1      	luz=0;
+ 164   1      	while(1)
+ 165   1      	{
+ 166   2      		if(b_frente==1)
+ 167   2      		{
+ 168   3      			printf("1A0.5 1V0.5 1D+ 1MC 1TR0XX 1G ");		//setando acelereaçã
+            -o, velocidade, sentido, modo continuo, espera trigger, executa. 
+ 169   3      			printf("2A0.5 2V0.5 2D- 2MC 2TR0XX 2G ");	
+ 170   3      			time(1);
+ 171   3      			trg_d1=1;
+ 172   3      			trg_d2=1;
+ 173   3      			while(b_frente==1);
+ 174   3      			printf("K ");
+ 175   3      			trg_d1=0;
+ 176   3      			trg_d2=0;
+ 177   3      		}
+ 178   2      		if(b_traz==1)
+ 179   2      		{
+ 180   3      			printf("1A0.5 1V0.5 1D- 1MC 1TR0XX 1G ");		//setando acelereaçã
+            -o, velocidade, sentido, modo continuo, espera trigger, executa. 
+ 181   3      			printf("2A0.5 2V0.5 2D+ 2MC 2TR0XX 2G ");		//inverte o sentido 
+            -da rotação dos motores
+ 182   3      			time(1);
+ 183   3      			trg_d1=1;
+ 184   3      			trg_d2=1;
+ 185   3      			while(b_traz==1);
+ 186   3      			printf("K ");
+ 187   3      			trg_d1=0;
+ 188   3      			trg_d2=0;
+ 189   3      		}
+ 190   2      		if(b_start==1)
+ 191   2      		{
+ 192   3      			luz=1;
+ 193   3      			sirene=1;
+ 194   3      			time(3);
+ 195   3      			sirene=0;
+ 196   3      			break;
+ 197   3      		}
+ 198   2      	}
+ 199   1      	posicao_driver();
+ 200   1      	while(b_start);			//trava nessa linha enquanto o start for aciona
+            -do, assim q soltar o botão volta a scanear
+ 201   1      	time(3);						//tempo para evitar "debounce" 
+ 202   1      }
+ 203          void direita()
+ 204          {
+ 205   1      	time(1);
+ 206   1      	luz=0;
+ 207   1      	while(1)
+ 208   1      		{
+ 209   2      			if(b_direita==1)
+ 210   2      			{
+ 211   3      				printf("2A0.5 2V0.5 2D- 2MC 2TR0XX 2G ");      //Driver com se
+            -ntido a frente
+ 212   3      				time(1);
+ 213   3      				trg_d2=1;
+ 214   3      				while(b_direita==1);
+ 215   3      				printf("K ");
+ 216   3      				trg_d2=0;
+ 217   3      			}
+ 218   2      			if(b_esquerda==1)
+ 219   2      			{
+ 220   3      				printf("2A0.5 2V0.5 2D+ 2MC 2TR0XX 2G ");  //sentido inverso n
+            -o Driver
+ 221   3      				time(1);
+ 222   3      				trg_d2=1;
+ 223   3      				while(b_traz==1);
+ 224   3      				printf("K ");
+ 225   3      				trg_d2=0;
+ 226   3      			}
+ 227   2      			if(b_start==1)
+ 228   2      			{
+ 229   3      				luz=1;
+ 230   3      				sirene=1;
+ 231   3      				time(3);
+ 232   3      				sirene=0;
+ 233   3      				break;
+ 234   3      			}
+ 235   2      		}
+ 236   1      	posicao_driver();
+ 237   1      	while(b_start);			//trava nessa linha enquanto o start for aciona
+            -do, assim q soltar o botão volta a scanear
+ 238   1      	time(3);					//tempo para evitar "debounce" no controle
+ 239   1      }
+ 240          void esquerda()
+ 241          {
+ 242   1      	time(1);
+ 243   1      	luz=0;
+ 244   1      	while(1)
+ 245   1      		{
+ 246   2      			if(b_esquerda==1)
+ 247   2      			{
+ 248   3      				printf("1A0.5 1V0.5 1D+ 1MC 1TR0XX 1G ");      //Driver com se
+            -ntido a frente
+ 249   3      				time(1);
+ 250   3      				trg_d1=1;
+ 251   3      				while(b_esquerda==1);
+ 252   3      				printf("K ");
+ 253   3      				trg_d1=0;
+ 254   3      			}
+ 255   2      			if(b_direita==1)
+ 256   2      			{
+ 257   3      				printf("1A0.5 1V0.5 1D- 1MC 1TR0XX 1G ");  //sentido inverso n
+            -o Driver
+ 258   3      				time(1);
+ 259   3      				trg_d1=1;
+ 260   3      				while(b_traz==1);
+ 261   3      				printf("K ");
+ 262   3      				trg_d1=0;
+ 263   3      			}
+ 264   2      			if(b_start==1)
+ 265   2      			{
+ 266   3      				luz=1;
+ 267   3      				sirene=1;
+ 268   3      				time(3);
+ 269   3      				sirene=0;
+ 270   3      				break;
+ 271   3      			}
+ 272   2      		}	
+ 273   1      	posicao_driver();
+ 274   1      	while(b_start);			//trava nessa linha enquanto o start for aciona
+            -do, assim q soltar o botão volta a scanear
+ 275   1      	time(3);					//tempo para evitar "debounce" no controle
+ 276   1      }
+ 277          void traz()
+ 278          {
+ 279   1      	time(1);
+ 280   1      	luz=0;
+ 281   1      	while(1)
+ 282   1      		{
+ 283   2      			if(b_traz==1)
+ 284   2      			{
+ 285   3      				printf("1A0.5 1V0.5 1D- 1MC 1TR0XX 1G ");		//setando acelereaç
+            -ão, velocidade, sentido, modo continuo, espera trigger, executa. 
+ 286   3      				printf("2A0.5 2V0.5 2D+ 2MC 2TR0XX 2G ");
+ 287   3      				time(1);
+ 288   3      				trg_d1=1;
+ 289   3      				trg_d2=1;
+ 290   3      				while(b_traz==1);
+ 291   3      				printf("K ");
+ 292   3      				trg_d1=0;
+ 293   3      				trg_d2=0;
+ 294   3      			}
+ 295   2      			if(b_frente==1)
+ 296   2      			{
+ 297   3      				printf("1A0.5 1V0.5 1D+ 1MC 1TR0XX 1G ");		//setando acelereaç
+            -ão, velocidade, sentido, modo continuo, espera trigger, executa. 
+ 298   3      				printf("2A0.5 2V0.5 2D- 2MC 2TR0XX 2G ");		//inverte o sentido
+            - da rotação dos motores
+ 299   3      				time(1);
+ 300   3      				trg_d1=1;
+ 301   3      				trg_d2=1;
+ 302   3      				while(b_frente==1);
+ 303   3      				printf("K ");
+ 304   3      				trg_d1=0;
+ 305   3      				trg_d2=0;
+ 306   3      			}
+ 307   2      			if(b_start==1)
+ 308   2      			{
+ 309   3      				luz=1;
+ 310   3      				sirene=1;
+ 311   3      				time(3);
+ 312   3      				sirene=0;
+ 313   3      				break;
+ 314   3      			}
+ 315   2      		}
+ 316   1      	posicao_driver();
+ 317   1      	while(b_start);			//trava nessa linha enquanto o start for aciona
+            -do, assim q soltar o botão volta a scanear
+ 318   1      	time(3);					//tempo para evitar "debounce" no controle
+ 319   1      }
+ 320          void automatico()
+ 321          {
+ 322   1      	time(5);
+ 323   1      	luz=0;
+ 324   1      	autonomo=1;
+ 325   1      	while(1)			// 1º laço para retornar
+ 326   1      	{
+ 327   2      		if(!posicao)
+ 328   2      		{
+ 329   3      			time(10);
+ 330   3      			break;
+ 331   3      		}
+ 332   2      		posicao--;
+ 333   2      		m1[posicao]=m1[posicao]*-1;
+ 334   2      		m2[posicao]=m2[posicao]*-1;
+ 335   2      		motor_a();
+ 336   2      	}
+ 337   1      	while(posicao!=maximo)                  //laço para realizar os p
+            -asso adiante
+ 338   1      	{
+ 339   2      		m1[posicao]=m1[posicao]*-1;
+ 340   2      		m2[posicao]=m2[posicao]*-1;
+ 341   2      		motor_a();
+ 342   2      		posicao++;
+ 343   2      	}
+ 344   1      	while(posicao==maximo) 				//2º laço para retornar
+ 345   1      	{
+ 346   2      		furar();
+ 347   2      		while(1)
+ 348   2      		{
+ 349   3      			if(!posicao)
+ 350   3      			{
+ 351   4      				time(10);
+ 352   4      				break;
+ 353   4      			}
+ 354   3      			posicao--;
+ 355   3      			m1[posicao]=m1[posicao]*-1;
+ 356   3      			m2[posicao]=m2[posicao]*-1;
+ 357   3      			motor_a();
+ 358   3      		}
+ 359   2      	}
+ 360   1      	time(5);
+ 361   1      	luz=1;
+ 362   1      	main();
+ 363   1      }
+ 364          //rotinas de comando aos drivers PARKER
+ 365          void motor_a()
+ 366          {
+ 367   1       	printf("1K 1LD3 1MN 1PZ 1TR0XX 1A0.5 1V0.5 1O11 1D%ld 1G 1O00 1X
+            -T 1XR1 ",m1[posicao]);
+ 368   1       	printf("2K 2LD3 2MN 2PZ 2TR0XX 2A0.5 2V0.5 2O11 2D%ld 2G 2O00 2X
+            -T 2XR1 ",m2[posicao]);
+ 369   1      	trg_d1=1;
+ 370   1      	trg_d2=1;
+ 371   1      	espera_1();
+ 372   1      	espera_2();
+ 373   1      }
+ 374          void motor3_c()								//rotina para subir suporte da furadeira
+ 375          {
+ 376   1       	printf("3ST0 ");
+ 377   1      	time(1);
+ 378   1      
+ 379   1       	printf("3K 3LD3 3A10 3V40 3O11 3D-%0.0lu 3G 3O00 3XT ",distancia
+            -);
+ 380   1       	espera_3();
+ 381   1      
+ 382   1       	printf("3ST1 ");
+ 383   1      
+ 384   1      }
+ 385          void motor3_cf()								//rotina para retornar com a furadeira lig
+            -ada
+ 386          {
+ 387   1       	printf("3ST0 ");
+ 388   1      	time(1);
+ 389   1       	printf("3K 3LD3 3A40 3V40 3O11 3D-%0.0lu 3G 3O00 3XT ",distancia
+            -);
+ 390   1       	time(1);
+ 391   1       	while(out_d3==1)
+ 392   1       	{
+ 393   2      	 	printf("4S ");
+ 394   2       	}		
+ 395   1       	printf("3ST1 ");
+ 396   1      }
+ 397          void motor3_b()								//rotina que baixa o suporte da furadeira
+ 398          {
+ 399   1       	printf("3ST0 ");
+ 400   1      	time(1);
+ 401   1      	
+ 402   1       	printf("3K 3LD3 3A200 3V40 3O11 3D+%0.0lu 3G 3O00 3XT ",distanci
+            -a); 
+ 403   1       	espera_3();
+ 404   1       	printf("3ST1 ");
+ 405   1      }
+ 406          void motor3_bf()					//rotina para baixar com a furadeira ligada (
+            -avanço lento)
+ 407          {
+ 408   1       	printf("3ST0 ");
+ 409   1      	time(1);	
+ 410   1      	
+ 411   1       	printf("3K 3LD3 3A200 3V5 3O11 3D+%0.0lu 3G 3O00 3XT ",distancia
+            -); 
+ 412   1       	printf("4ST0 ");
+ 413   1      	time(1);	
+ 414   1       	printf("4K 4LD3 4A100 4V9 4O11 4H 4D+4064000 4G 4O00 4XT ");
+ 415   1       	espera_3();
+ 416   1       	
+ 417   1       	printf("3ST1 ");
+ 418   1       	printf("4ST1 ");
+ 419   1      }
+ 420          void espera_1()
+ 421          {
+ 422   1      	time(1);					//conta um tempo apenas para variar a saida do drive
+            -r
+ 423   1      	while(out_d1==1);  	//enquanto a saida mostrar q o driver está fu
+            -ncionando espera
+ 424   1      	trg_d1=0;				//desabilita o trigger do driver
+ 425   1      } 	
+ 426          void espera_2()
+ 427          {
+ 428   1      	time(1);					//conta um tempo apenas para variar a saida do drive
+            -r
+ 429   1      	while(out_d2==1);		//enquanto a saida mostrar q o driver está fun
+            -cionando espera nessa linha
+ 430   1      	trg_d2=0;				//desabilita o trigger do driver
+ 431   1      } 	
+ 432          void espera_3()
+ 433          {
+ 434   1         time(1);
+ 435   1         while(out_d3==1);
+ 436   1      }
+ 437          void furar()
+ 438          {											//1mm = 9000ppr
+ 439   1      	luz=1;								//desliga a luz
+ 440   1      	sirene=1;							//liga a sirene
+ 441   1      	distancia=fuso*100;				//profundidade para achegar perto do solo
+
+            - 442   1      	motor3_b();							
+ 443   1      	distancia=fuso*50;				//rotina desce realizando o furo
+ 444   1      	motor3_bf();		
+ 445   1      	distancia=fuso*150;          //rotina para retornar a broca a sua
+            - posição inicial
+ 446   1      	motor3_cf();						
+ 447   1      	luz=0;
+ 448   1      	sirene=0;
+ 449   1      }
+ 450          void time(int h) 					//contagem MENOR QUE 1/2 segundo
+ 451          {
+ 452   1      	int f;
+ 453   1      	int g;
+ 454   1      	while(h!=0)
+ 455   1      	{
+ 456   2      		h--;
+ 457   2      		f=4;
+ 458   2      		while(f!=0)
+ 459   2      			{
+ 460   3      			 for(g=0;g<=57350;g++);
+ 461   3      			 	{
+ 462   4      			 		f--;
+ 463   4      				}
+ 464   3      			}
+ 465   2      	}
+ 466   1      }
+ 467          void posicao_driver()
+ 468          {
+ 469   1      //INICIA PROCESSO DE REQUECIÇÃO DE POSIÇÃO E ARMAZENAMENTO  						
+            -	
+ 470   1       		printf("1TR0XX 1PR ");  //manda o driver esperar o trigger, par
+            -a depois disso dar a posição real
+ 471   1       	  	time(1);				  		
+ 472   1         	trg_d1=1;
+ 473   1        	 	TI=0;							//habilita bit de interupção na transmissão
+ 474   1         	ES=1;							//seta bit que habilita interrupção serial
+ 475   1         	motor=0;						//bit motor=0 para escrever na posição referente
+            - a tal roda; em algum momento daki em diante gerará uma interrupção
+            - na Serial
+ 476   1         	enable=0;
+ 477   1         	indice=0;	
+ 478   1        				
+ 479   1       		while(indice<=10);		//enquanto o indice for menor/igual a 10 at
+            -ribui o valor de dado na tabela M1 no endereço apontado pelo indic	
+            -
+ 480   1       		ES=0;							//desabilita interrupção da serial
+ 481   1       		temp[11]=0;					//coloca numero zero na ultima posição da tabel
+            -a para construir assim uma string valida
+ 482   1       		TI=1;							//habilita o bit de interupção na transmissão			 		
+            -			
+ 483   1       		trg_d1=0;
+ 484   1      
+ 485   1      		m1[posicao] = atol (temp);
+ 486   1       		
+ 487   1         	printf("2TR0XX 2PR ");
+ 488   1        		time(1);
+ 489   1        		trg_d2=1;
+ 490   1        		TI=0;
+ 491   1         	ES=1;
+ 492   1         	motor=1;					//motor=1 para escrever em posições referente a t
+            -al roda!
+ 493   1         	enable=0;
+ 494   1         	indice=0;
+ 495   1         							
+ 496   1       		while(indice<=10);
+ 497   1       		ES=0;		
+ 498   1       		temp[11]=0;
+ 499   1       		TI=1;		   
+ 500   1         	trg_d2=0;	   
+ 501   1         	
+ 502   1         	m2[posicao] = atol (temp);
+ 503   1        	 	posicao++;		//incrementa o ponteiro tabela, para guardar o va
+            -lor colhido em uma nova posição
+ 504   1         	maximo=posicao;
+ 505   1      }
+ 506          void ler_serial(void) interrupt 4
+ 507          {
+ 508   1      	ES=0;
+ 509   1      	if(SBUF=='-' || SBUF=='+') enable=1;
+ 510   1      	if(enable)
+ 511   1      		{
+ 512   2      		if(!motor)
+ 513   2      			{
+ 514   3      			temp[indice]=SBUF;
+ 515   3      			indice++;
+ 516   3      			}
+ 517   2      		if(motor)
+ 518   2      			{
+ 519   3      			temp[indice]=SBUF;
+ 520   3      			indice++;
+ 521   3      			}
+ 522   2      		}
+ 523   1         RI=0;
+ 524   1      	ES=1;
+ 525   1      }
+
+WARNING C233 IN LINE 525 OF controle.c : using absolute registers together with
+            - interrupts can cause register corruptions (mixup of register banks
+            -)
+ 526          
+RC51 COMPILER V03.03.37,  CONTROLE                05/24/07  10:54:36  PAGE  2
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+            ; FUNCTION main (BEGIN)
+                                           ; SOURCE LINE # 76 
+0000 C292           CLR    bomba1
+                                           ; SOURCE LINE # 77 
+0002 C291           CLR    bomba2
+                                           ; SOURCE LINE # 78 
+0004 C290           CLR    sirene
+                                           ; SOURCE LINE # 79 
+0006 D2B4           SETB   luz
+                                           ; SOURCE LINE # 80 
+0008 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 81 
+000A C287           CLR    trg_d2
+                                           ; SOURCE LINE # 84 
+000C 758700         MOV    PCON,#000H
+                                           ; SOURCE LINE # 85 
+000F 758840         MOV    TCON,#040H
+                                           ; SOURCE LINE # 86 
+0012 758DFD         MOV    TH1,#0FDH
+                                           ; SOURCE LINE # 87 
+0015 758920         MOV    TMOD,#020H
+                                           ; SOURCE LINE # 88 
+0018 759852         MOV    SCON,#052H
+                                           ; SOURCE LINE # 91 
+001B D2AF           SETB   EA
+                                           ; SOURCE LINE # 92 
+001D C2AC           CLR    ES
+                                           ; SOURCE LINE # 94 
+001F D2BC           SETB   PS
+                                           ; SOURCE LINE # 95 
+0021 C2BA           CLR    PX1
+                                           ; SOURCE LINE # 98 
+0023 7B05           MOV    R3,#005H
+0025 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE)
+0027 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE)
+0029 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 99 
+002C 7B05           MOV    R3,#005H
+002E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 006H)
+0030 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 006H)
+0032 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 100 
+0035 7B05           MOV    R3,#005H
+0037 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+0039 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+003B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 101 
+003E 7B05           MOV    R3,#005H
+0040 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 012H)
+0042 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 012H)
+0044 120000  R      LCALL  ?printf
+0047         ?WHILE6:
+
+0047         ?WHILE7:
+                                           ; SOURCE LINE # 105 
+0047 30971A         JNB    b_acao,?WHILE8
+004A 300017  R      JNB    autonomo,?WHILE8
+                                           ; SOURCE LINE # 107 
+004D 7B05           MOV    R3,#005H
+004F 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 018H)
+0051 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 018H)
+0053 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 108 
+0056 7B05           MOV    R3,#005H
+0058 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 01EH)
+005A 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 01EH)
+005C 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 109 
+005F 120000  R      LCALL  automatico
+0062 80E3           SJMP   ?WHILE7
+0064         ?WHILE8:
+                                           ; SOURCE LINE # 111 
+0064 30B24B         JNB    b_start,?WHILE11
+0067         ?WHILE9:
+                                           ; SOURCE LINE # 113 
+0067 20B2FD         JB     b_start,?WHILE9
+                                           ; SOURCE LINE # 114 
+006A E4             CLR    A
+006B FE             MOV    R6,A
+006C 7F02           MOV    R7,#002H
+006E 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 117 
+0071 7B05           MOV    R3,#005H
+0073 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 018H)
+0075 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 018H)
+0077 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 118 
+007A 7B05           MOV    R3,#005H
+007C 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 01EH)
+007E 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 01EH)
+0080 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 119 
+0083 E4             CLR    A
+0084 FE             MOV    R6,A
+0085 7F01           MOV    R7,#001H
+0087 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 121 
+008A 120000  R      LCALL  scanear_controle
+                                           ; SOURCE LINE # 122 
+008D E4             CLR    A
+008E FE             MOV    R6,A
+008F 7F01           MOV    R7,#001H
+0091 120000  R      LCALL  _time
+0094         ?WHILE10:
+                                           ; SOURCE LINE # 123 
+0094 20B2FD         JB     b_start,?WHILE10
+                                           ; SOURCE LINE # 124 
+0097 120000  R      LCALL  automatico
+                                           ; SOURCE LINE # 127 
+009A D2B4           SETB   luz
+                                           ; SOURCE LINE # 128 
+009C C290           CLR    sirene
+                                           ; SOURCE LINE # 129 
+009E 7B05           MOV    R3,#005H
+00A0 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE)
+00A2 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE)
+00A4 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 130 
+00A7 7B05           MOV    R3,#005H
+00A9 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 006H)
+00AB 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 006H)
+00AD 120000  R      LCALL  ?printf
+00B0 80B2           SJMP   ?WHILE8
+00B2         ?WHILE11:
+                                           ; SOURCE LINE # 132 
+00B2 308092         JNB    botao0,?WHILE6
+                                           ; SOURCE LINE # 134 
+00B5 7B05           MOV    R3,#005H
+00B7 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE)
+00B9 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE)
+00BB 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 135 
+00BE 7B05           MOV    R3,#005H
+00C0 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 006H)
+00C2 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 006H)
+00C4 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 136 
+00C7 7B05           MOV    R3,#005H
+00C9 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+00CB 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+00CD 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 137 
+00D0 7B05           MOV    R3,#005H
+00D2 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 012H)
+00D4 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 012H)
+00D6 120000  R      LCALL  ?printf
+00D9 80D7           SJMP   ?WHILE11
+
+            ; FUNCTION main (END)
+
+            ; FUNCTION scanear_controle (BEGIN)
+0000         ?WHILE13:
+                                           ; SOURCE LINE # 143 
+0000 20B23E         JB     b_start,?NXT18
+                                           ; SOURCE LINE # 145 
+0003 C2B4           CLR    luz
+                                           ; SOURCE LINE # 146 
+0005 7B05           MOV    R3,#005H
+0007 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 024H)
+0009 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 024H)
+000B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 147 
+000E 7B05           MOV    R3,#005H
+0010 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 02CH)
+0012 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 02CH)
+0014 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 148 
+0017 309403         JNB    b_frente,?NXT19
+001A 120000  R      LCALL  frente
+001D         ?NXT19:
+                                           ; SOURCE LINE # 149 
+001D 309303         JNB    b_esquerda,?NXT20
+0020 120000  R      LCALL  esquerda
+0023         ?NXT20:
+                                           ; SOURCE LINE # 150 
+0023 309503         JNB    b_direita,?NXT21
+0026 120000  R      LCALL  direita
+0029         ?NXT21:
+                                           ; SOURCE LINE # 151 
+0029 309603         JNB    b_traz,?NXT22
+002C 120000  R      LCALL  traz
+002F         ?NXT22:
+                                           ; SOURCE LINE # 152 
+002F 3097CE         JNB    b_acao,?WHILE13
+                                           ; SOURCE LINE # 154 
+0032 120000  R      LCALL  furar
+                                           ; SOURCE LINE # 155 
+0035 E4             CLR    A
+0036 FE             MOV    R6,A
+0037 7F06           MOV    R7,#006H
+0039 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 156 
+003C 120000  R      LCALL  automatico
+003F 80BF           SJMP   ?WHILE13
+0041         ?NXT18:
+                                           ; SOURCE LINE # 159 
+0041 22             RET    
+
+            ; FUNCTION scanear_controle (END)
+
+            ; FUNCTION frente (BEGIN)
+                                           ; SOURCE LINE # 162 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 163 
+0007 C2B4           CLR    luz
+0009         ?WHILE18:
+                                           ; SOURCE LINE # 166 
+0009 30942D         JNB    b_frente,?NXT32
+                                           ; SOURCE LINE # 168 
+000C 7B05           MOV    R3,#005H
+000E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 034H)
+0010 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 034H)
+0012 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 169 
+0015 7B05           MOV    R3,#005H
+0017 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 053H)
+0019 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 053H)
+001B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 170 
+001E E4             CLR    A
+001F FE             MOV    R6,A
+0020 7F01           MOV    R7,#001H
+0022 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 171 
+0025 D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 172 
+0027 D287           SETB   trg_d2
+0029         ?WHILE19:
+                                           ; SOURCE LINE # 173 
+0029 2094FD         JB     b_frente,?WHILE19
+                                           ; SOURCE LINE # 174 
+002C 7B05           MOV    R3,#005H
+002E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0030 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0032 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 175 
+0035 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 176 
+0037 C287           CLR    trg_d2
+0039         ?NXT32:
+                                           ; SOURCE LINE # 178 
+0039 30962D         JNB    b_traz,?NXT34
+                                           ; SOURCE LINE # 180 
+003C 7B05           MOV    R3,#005H
+003E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 075H)
+0040 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 075H)
+0042 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 181 
+0045 7B05           MOV    R3,#005H
+0047 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 094H)
+0049 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 094H)
+004B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 182 
+004E E4             CLR    A
+004F FE             MOV    R6,A
+0050 7F01           MOV    R7,#001H
+0052 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 183 
+0055 D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 184 
+0057 D287           SETB   trg_d2
+0059         ?WHILE20:
+                                           ; SOURCE LINE # 185 
+0059 2096FD         JB     b_traz,?WHILE20
+                                           ; SOURCE LINE # 186 
+005C 7B05           MOV    R3,#005H
+005E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0060 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0062 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 187 
+0065 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 188 
+0067 C287           CLR    trg_d2
+0069         ?NXT34:
+                                           ; SOURCE LINE # 190 
+0069 30B29D         JNB    b_start,?WHILE18
+                                           ; SOURCE LINE # 192 
+006C D2B4           SETB   luz
+                                           ; SOURCE LINE # 193 
+006E D290           SETB   sirene
+                                           ; SOURCE LINE # 194 
+0070 E4             CLR    A
+0071 FE             MOV    R6,A
+0072 7F03           MOV    R7,#003H
+0074 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 195 
+0077 C290           CLR    sirene
+0079         ?NXT31:
+                                           ; SOURCE LINE # 199 
+0079 120000  R      LCALL  posicao_driver
+007C         ?WHILE21:
+                                           ; SOURCE LINE # 200 
+007C 20B2FD         JB     b_start,?WHILE21
+                                           ; SOURCE LINE # 201 
+007F E4             CLR    A
+0080 FE             MOV    R6,A
+0081 7F03           MOV    R7,#003H
+0083 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 202 
+0086 22             RET    
+
+            ; FUNCTION frente (END)
+
+            ; FUNCTION direita (BEGIN)
+                                           ; SOURCE LINE # 205 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 206 
+0007 C2B4           CLR    luz
+0009         ?WHILE26:
+                                           ; SOURCE LINE # 209 
+0009 309520         JNB    b_direita,?NXT46
+                                           ; SOURCE LINE # 211 
+000C 7B05           MOV    R3,#005H
+000E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 053H)
+0010 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 053H)
+0012 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 212 
+0015 E4             CLR    A
+0016 FE             MOV    R6,A
+0017 7F01           MOV    R7,#001H
+0019 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 213 
+001C D287           SETB   trg_d2
+001E         ?WHILE27:
+                                           ; SOURCE LINE # 214 
+001E 2095FD         JB     b_direita,?WHILE27
+                                           ; SOURCE LINE # 215 
+0021 7B05           MOV    R3,#005H
+0023 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0025 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0027 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 216 
+002A C287           CLR    trg_d2
+002C         ?NXT46:
+                                           ; SOURCE LINE # 218 
+002C 309320         JNB    b_esquerda,?NXT48
+                                           ; SOURCE LINE # 220 
+002F 7B05           MOV    R3,#005H
+0031 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 094H)
+0033 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 094H)
+0035 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 221 
+0038 E4             CLR    A
+0039 FE             MOV    R6,A
+003A 7F01           MOV    R7,#001H
+003C 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 222 
+003F D287           SETB   trg_d2
+0041         ?WHILE28:
+                                           ; SOURCE LINE # 223 
+0041 2096FD         JB     b_traz,?WHILE28
+                                           ; SOURCE LINE # 224 
+0044 7B05           MOV    R3,#005H
+0046 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0048 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+004A 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 225 
+004D C287           CLR    trg_d2
+004F         ?NXT48:
+                                           ; SOURCE LINE # 227 
+004F 30B2B7         JNB    b_start,?WHILE26
+                                           ; SOURCE LINE # 229 
+0052 D2B4           SETB   luz
+                                           ; SOURCE LINE # 230 
+0054 D290           SETB   sirene
+                                           ; SOURCE LINE # 231 
+0056 E4             CLR    A
+0057 FE             MOV    R6,A
+0058 7F03           MOV    R7,#003H
+005A 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 232 
+005D C290           CLR    sirene
+005F         ?NXT45:
+                                           ; SOURCE LINE # 236 
+005F 120000  R      LCALL  posicao_driver
+0062         ?WHILE29:
+                                           ; SOURCE LINE # 237 
+0062 20B2FD         JB     b_start,?WHILE29
+                                           ; SOURCE LINE # 238 
+0065 E4             CLR    A
+0066 FE             MOV    R6,A
+0067 7F03           MOV    R7,#003H
+0069 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 239 
+006C 22             RET    
+
+            ; FUNCTION direita (END)
+
+            ; FUNCTION esquerda (BEGIN)
+                                           ; SOURCE LINE # 242 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 243 
+0007 C2B4           CLR    luz
+0009         ?WHILE34:
+                                           ; SOURCE LINE # 246 
+0009 309320         JNB    b_esquerda,?NXT60
+                                           ; SOURCE LINE # 248 
+000C 7B05           MOV    R3,#005H
+000E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 034H)
+0010 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 034H)
+0012 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 249 
+0015 E4             CLR    A
+0016 FE             MOV    R6,A
+0017 7F01           MOV    R7,#001H
+0019 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 250 
+001C D2A0           SETB   trg_d1
+001E         ?WHILE35:
+                                           ; SOURCE LINE # 251 
+001E 2093FD         JB     b_esquerda,?WHILE35
+                                           ; SOURCE LINE # 252 
+0021 7B05           MOV    R3,#005H
+0023 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0025 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0027 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 253 
+002A C2A0           CLR    trg_d1
+002C         ?NXT60:
+                                           ; SOURCE LINE # 255 
+002C 309520         JNB    b_direita,?NXT62
+                                           ; SOURCE LINE # 257 
+002F 7B05           MOV    R3,#005H
+0031 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 075H)
+0033 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 075H)
+0035 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 258 
+0038 E4             CLR    A
+0039 FE             MOV    R6,A
+003A 7F01           MOV    R7,#001H
+003C 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 259 
+003F D2A0           SETB   trg_d1
+0041         ?WHILE36:
+                                           ; SOURCE LINE # 260 
+0041 2096FD         JB     b_traz,?WHILE36
+                                           ; SOURCE LINE # 261 
+0044 7B05           MOV    R3,#005H
+0046 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0048 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+004A 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 262 
+004D C2A0           CLR    trg_d1
+004F         ?NXT62:
+                                           ; SOURCE LINE # 264 
+004F 30B2B7         JNB    b_start,?WHILE34
+                                           ; SOURCE LINE # 266 
+0052 D2B4           SETB   luz
+                                           ; SOURCE LINE # 267 
+0054 D290           SETB   sirene
+                                           ; SOURCE LINE # 268 
+0056 E4             CLR    A
+0057 FE             MOV    R6,A
+0058 7F03           MOV    R7,#003H
+005A 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 269 
+005D C290           CLR    sirene
+005F         ?NXT59:
+                                           ; SOURCE LINE # 273 
+005F 120000  R      LCALL  posicao_driver
+0062         ?WHILE37:
+                                           ; SOURCE LINE # 274 
+0062 20B2FD         JB     b_start,?WHILE37
+                                           ; SOURCE LINE # 275 
+0065 E4             CLR    A
+0066 FE             MOV    R6,A
+0067 7F03           MOV    R7,#003H
+0069 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 276 
+006C 22             RET    
+
+            ; FUNCTION esquerda (END)
+
+            ; FUNCTION traz (BEGIN)
+                                           ; SOURCE LINE # 279 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 280 
+0007 C2B4           CLR    luz
+0009         ?WHILE42:
+                                           ; SOURCE LINE # 283 
+0009 30962D         JNB    b_traz,?NXT74
+                                           ; SOURCE LINE # 285 
+000C 7B05           MOV    R3,#005H
+000E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 075H)
+0010 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 075H)
+0012 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 286 
+0015 7B05           MOV    R3,#005H
+0017 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 094H)
+0019 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 094H)
+001B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 287 
+001E E4             CLR    A
+001F FE             MOV    R6,A
+0020 7F01           MOV    R7,#001H
+0022 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 288 
+0025 D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 289 
+0027 D287           SETB   trg_d2
+0029         ?WHILE43:
+                                           ; SOURCE LINE # 290 
+0029 2096FD         JB     b_traz,?WHILE43
+                                           ; SOURCE LINE # 291 
+002C 7B05           MOV    R3,#005H
+002E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0030 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0032 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 292 
+0035 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 293 
+0037 C287           CLR    trg_d2
+0039         ?NXT74:
+                                           ; SOURCE LINE # 295 
+0039 30942D         JNB    b_frente,?NXT76
+                                           ; SOURCE LINE # 297 
+003C 7B05           MOV    R3,#005H
+003E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 034H)
+0040 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 034H)
+0042 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 298 
+0045 7B05           MOV    R3,#005H
+0047 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 053H)
+0049 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 053H)
+004B 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 299 
+004E E4             CLR    A
+004F FE             MOV    R6,A
+0050 7F01           MOV    R7,#001H
+0052 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 300 
+0055 D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 301 
+0057 D287           SETB   trg_d2
+0059         ?WHILE44:
+                                           ; SOURCE LINE # 302 
+0059 2094FD         JB     b_frente,?WHILE44
+                                           ; SOURCE LINE # 303 
+005C 7B05           MOV    R3,#005H
+005E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 072H)
+0060 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 072H)
+0062 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 304 
+0065 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 305 
+0067 C287           CLR    trg_d2
+0069         ?NXT76:
+                                           ; SOURCE LINE # 307 
+0069 30B29D         JNB    b_start,?WHILE42
+                                           ; SOURCE LINE # 309 
+006C D2B4           SETB   luz
+                                           ; SOURCE LINE # 310 
+006E D290           SETB   sirene
+                                           ; SOURCE LINE # 311 
+0070 E4             CLR    A
+0071 FE             MOV    R6,A
+0072 7F03           MOV    R7,#003H
+0074 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 312 
+0077 C290           CLR    sirene
+0079         ?NXT73:
+                                           ; SOURCE LINE # 316 
+0079 120000  R      LCALL  posicao_driver
+007C         ?WHILE45:
+                                           ; SOURCE LINE # 317 
+007C 20B2FD         JB     b_start,?WHILE45
+                                           ; SOURCE LINE # 318 
+007F E4             CLR    A
+0080 FE             MOV    R6,A
+0081 7F03           MOV    R7,#003H
+0083 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 319 
+0086 22             RET    
+
+            ; FUNCTION traz (END)
+
+            ; FUNCTION automatico (BEGIN)
+                                           ; SOURCE LINE # 322 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F05           MOV    R7,#005H
+0004 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 323 
+0007 C2B4           CLR    luz
+                                           ; SOURCE LINE # 324 
+0009 D200    R      SETB   autonomo
+000B         ?WHILE50:
+                                           ; SOURCE LINE # 327 
+000B E500    R      MOV    A,posicao
+000D 4500    R      ORL    A,posicao+01H
+000F 7009           JNZ    ?NXT87
+                                           ; SOURCE LINE # 329 
+0011 E4             CLR    A
+0012 FE             MOV    R6,A
+0013 7F0A           MOV    R7,#00AH
+0015 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 330 
+0018 804B           SJMP   ?WHILE51
+001A         ?NXT87:
+                                           ; SOURCE LINE # 332 
+001A E500    R      MOV    A,posicao+01H
+001C 1500    R      DEC    posicao+01H
+001E 7002           JNZ    ?LAB19
+0020 1500    R      DEC    posicao
+0022         ?LAB19:
+                                           ; SOURCE LINE # 333 
+0022 E500    R      MOV    A,posicao+01H
+0024 23             RL     A
+0025 23             RL     A
+0026 54FC           ANL    A,#0FCH
+0028 2400    R      ADD    A,#m1
+002A F8             MOV    R0,A
+002B C000           PUSH   AR0
+002D 120000  R      LCALL  STACKPREP4?C
+0030 120000  R      LCALL  MV4_I02SK?C
+0033 74FF           MOV    A,#0FFH
+0035 FC             MOV    R4,A
+0036 FD             MOV    R5,A
+0037 FE             MOV    R6,A
+0038 FF             MOV    R7,A
+0039 120000  R      LCALL  ?C_LMUL
+003C D001           POP    AR1
+003E 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 334 
+0041 E500    R      MOV    A,posicao+01H
+0043 23             RL     A
+0044 23             RL     A
+0045 54FC           ANL    A,#0FCH
+0047 2400    R      ADD    A,#m2
+0049 F8             MOV    R0,A
+004A C000           PUSH   AR0
+004C 120000  R      LCALL  STACKPREP4?C
+004F 120000  R      LCALL  MV4_I02SK?C
+0052 74FF           MOV    A,#0FFH
+0054 FF             MOV    R7,A
+0055 FE             MOV    R6,A
+0056 FC             MOV    R4,A
+0057 FD             MOV    R5,A
+0058 120000  R      LCALL  ?C_LMUL
+005B D001           POP    AR1
+005D 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 335 
+0060 120000  R      LCALL  motor_a
+0063 80A6           SJMP   ?WHILE50
+0065         ?WHILE51:
+                                           ; SOURCE LINE # 337 
+0065 E500    R      MOV    A,posicao
+0067 B50006  R      CJNE   A,maximo,?LAB20
+006A E500    R      MOV    A,posicao+01H
+006C 6500    R      XRL    A,maximo+01H
+006E 604B           JZ     ?WHILE52
+0070         ?LAB20:
+                                           ; SOURCE LINE # 339 
+0070 E500    R      MOV    A,posicao+01H
+0072 23             RL     A
+0073 23             RL     A
+0074 54FC           ANL    A,#0FCH
+0076 2400    R      ADD    A,#m1
+0078 F8             MOV    R0,A
+0079 C000           PUSH   AR0
+007B 120000  R      LCALL  STACKPREP4?C
+007E 120000  R      LCALL  MV4_I02SK?C
+0081 74FF           MOV    A,#0FFH
+0083 FC             MOV    R4,A
+0084 FD             MOV    R5,A
+0085 FE             MOV    R6,A
+0086 FF             MOV    R7,A
+0087 120000  R      LCALL  ?C_LMUL
+008A D001           POP    AR1
+008C 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 340 
+008F E500    R      MOV    A,posicao+01H
+0091 23             RL     A
+0092 23             RL     A
+0093 54FC           ANL    A,#0FCH
+0095 2400    R      ADD    A,#m2
+0097 F8             MOV    R0,A
+0098 C000           PUSH   AR0
+009A 120000  R      LCALL  STACKPREP4?C
+009D 120000  R      LCALL  MV4_I02SK?C
+00A0 74FF           MOV    A,#0FFH
+00A2 FF             MOV    R7,A
+00A3 FE             MOV    R6,A
+00A4 FC             MOV    R4,A
+00A5 FD             MOV    R5,A
+00A6 120000  R      LCALL  ?C_LMUL
+00A9 D001           POP    AR1
+00AB 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 341 
+00AE 120000  R      LCALL  motor_a
+                                           ; SOURCE LINE # 342 
+00B1 0500    R      INC    posicao+01H
+00B3 E500    R      MOV    A,posicao+01H
+00B5 70AE           JNZ    ?WHILE51
+00B7 0500    R      INC    posicao
+00B9 80AA           SJMP   ?WHILE51
+00BB         ?WHILE52:
+                                           ; SOURCE LINE # 344 
+00BB E500    R      MOV    A,posicao
+00BD B50062  R      CJNE   A,maximo,?NXT89
+00C0 E500    R      MOV    A,posicao+01H
+00C2 B5005D  R      CJNE   A,maximo+01H,?NXT89
+                                           ; SOURCE LINE # 346 
+00C5 120000  R      LCALL  furar
+00C8         ?WHILE53:
+                                           ; SOURCE LINE # 349 
+00C8 E500    R      MOV    A,posicao
+00CA 4500    R      ORL    A,posicao+01H
+00CC 7009           JNZ    ?NXT91
+                                           ; SOURCE LINE # 351 
+00CE E4             CLR    A
+00CF FE             MOV    R6,A
+00D0 7F0A           MOV    R7,#00AH
+00D2 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 352 
+00D5 80E4           SJMP   ?WHILE52
+00D7         ?NXT91:
+                                           ; SOURCE LINE # 354 
+00D7 E500    R      MOV    A,posicao+01H
+00D9 1500    R      DEC    posicao+01H
+00DB 7002           JNZ    ?LAB22
+00DD 1500    R      DEC    posicao
+00DF         ?LAB22:
+                                           ; SOURCE LINE # 355 
+00DF E500    R      MOV    A,posicao+01H
+00E1 23             RL     A
+00E2 23             RL     A
+00E3 54FC           ANL    A,#0FCH
+00E5 2400    R      ADD    A,#m1
+00E7 F8             MOV    R0,A
+00E8 C000           PUSH   AR0
+00EA 120000  R      LCALL  STACKPREP4?C
+00ED 120000  R      LCALL  MV4_I02SK?C
+00F0 74FF           MOV    A,#0FFH
+00F2 FC             MOV    R4,A
+00F3 FD             MOV    R5,A
+00F4 FE             MOV    R6,A
+00F5 FF             MOV    R7,A
+00F6 120000  R      LCALL  ?C_LMUL
+00F9 D001           POP    AR1
+00FB 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 356 
+00FE E500    R      MOV    A,posicao+01H
+0100 23             RL     A
+0101 23             RL     A
+0102 54FC           ANL    A,#0FCH
+0104 2400    R      ADD    A,#m2
+0106 F8             MOV    R0,A
+0107 C000           PUSH   AR0
+0109 120000  R      LCALL  STACKPREP4?C
+010C 120000  R      LCALL  MV4_I02SK?C
+010F 74FF           MOV    A,#0FFH
+0111 FF             MOV    R7,A
+0112 FE             MOV    R6,A
+0113 FC             MOV    R4,A
+0114 FD             MOV    R5,A
+0115 120000  R      LCALL  ?C_LMUL
+0118 D001           POP    AR1
+011A 120000  R      LCALL  MV4_RG2I1?C
+                                           ; SOURCE LINE # 357 
+011D 120000  R      LCALL  motor_a
+0120 80A6           SJMP   ?WHILE53
+0122         ?NXT89:
+                                           ; SOURCE LINE # 360 
+0122 E4             CLR    A
+0123 FE             MOV    R6,A
+0124 7F05           MOV    R7,#005H
+0126 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 361 
+0129 D2B4           SETB   luz
+                                           ; SOURCE LINE # 362 
+012B 120000  R      LCALL  main
+                                           ; SOURCE LINE # 363 
+012E 22             RET    
+
+            ; FUNCTION automatico (END)
+
+            ; FUNCTION motor_a (BEGIN)
+                                           ; SOURCE LINE # 367 
+0000 E500    R      MOV    A,posicao+01H
+0002 23             RL     A
+0003 23             RL     A
+0004 54FC           ANL    A,#0FCH
+0006 2400    R      ADD    A,#m1
+0008 F8             MOV    R0,A
+0009 120000  R      LCALL  STACKPREP4?C
+000C 120000  R      LCALL  MV4_I02SK?C
+000F 7B05           MOV    R3,#005H
+0011 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0B3H)
+0013 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0B3H)
+0015 120000  R      LCALL  ?printf
+0018 74FC           MOV    A,#0FCH
+001A 2581           ADD    A,SP
+001C F581           MOV    SP,A
+                                           ; SOURCE LINE # 368 
+001E E500    R      MOV    A,posicao+01H
+0020 23             RL     A
+0021 23             RL     A
+0022 54FC           ANL    A,#0FCH
+0024 2400    R      ADD    A,#m2
+0026 F8             MOV    R0,A
+0027 120000  R      LCALL  STACKPREP4?C
+002A 120000  R      LCALL  MV4_I02SK?C
+002D 7B05           MOV    R3,#005H
+002F 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0F3H)
+0031 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0F3H)
+0033 120000  R      LCALL  ?printf
+0036 74FC           MOV    A,#0FCH
+0038 2581           ADD    A,SP
+003A F581           MOV    SP,A
+                                           ; SOURCE LINE # 369 
+003C D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 370 
+003E D287           SETB   trg_d2
+                                           ; SOURCE LINE # 371 
+0040 120000  R      LCALL  espera_1
+                                           ; SOURCE LINE # 372 
+0043 120000  R      LCALL  espera_2
+                                           ; SOURCE LINE # 373 
+0046 22             RET    
+
+            ; FUNCTION motor_a (END)
+
+            ; FUNCTION motor3_c (BEGIN)
+                                           ; SOURCE LINE # 376 
+0000 7B05           MOV    R3,#005H
+0002 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0133H)
+0004 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0133H)
+0006 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 377 
+0009 E4             CLR    A
+000A FE             MOV    R6,A
+000B 7F01           MOV    R7,#001H
+000D 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 379 
+0010 7900    R      MOV    R1,#distancia
+0012 120000  R      LCALL  STACKPREP4?C
+0015 120000  R      LCALL  MV4_I12SK?C
+0018 7B05           MOV    R3,#005H
+001A 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0139H)
+001C 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0139H)
+001E 120000  R      LCALL  ?printf
+0021 74FC           MOV    A,#0FCH
+0023 2581           ADD    A,SP
+0025 F581           MOV    SP,A
+                                           ; SOURCE LINE # 380 
+0027 120000  R      LCALL  espera_3
+                                           ; SOURCE LINE # 382 
+002A 7B05           MOV    R3,#005H
+002C 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+002E 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+0030 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 384 
+0033 22             RET    
+
+            ; FUNCTION motor3_c (END)
+
+            ; FUNCTION motor3_cf (BEGIN)
+                                           ; SOURCE LINE # 387 
+0000 7B05           MOV    R3,#005H
+0002 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0133H)
+0004 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0133H)
+0006 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 388 
+0009 E4             CLR    A
+000A FE             MOV    R6,A
+000B 7F01           MOV    R7,#001H
+000D 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 389 
+0010 7900    R      MOV    R1,#distancia
+0012 120000  R      LCALL  STACKPREP4?C
+0015 120000  R      LCALL  MV4_I12SK?C
+0018 7B05           MOV    R3,#005H
+001A 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0167H)
+001C 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0167H)
+001E 120000  R      LCALL  ?printf
+0021 74FC           MOV    A,#0FCH
+0023 2581           ADD    A,SP
+0025 F581           MOV    SP,A
+                                           ; SOURCE LINE # 390 
+0027 E4             CLR    A
+0028 FE             MOV    R6,A
+0029 7F01           MOV    R7,#001H
+002B 120000  R      LCALL  _time
+002E         ?WHILE55:
+                                           ; SOURCE LINE # 391 
+002E 30850B         JNB    out_d3,?NXT93
+                                           ; SOURCE LINE # 393 
+0031 7B05           MOV    R3,#005H
+0033 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0195H)
+0035 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0195H)
+0037 120000  R      LCALL  ?printf
+003A 80F2           SJMP   ?WHILE55
+003C         ?NXT93:
+                                           ; SOURCE LINE # 395 
+003C 7B05           MOV    R3,#005H
+003E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+0040 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+0042 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 396 
+0045 22             RET    
+
+            ; FUNCTION motor3_cf (END)
+
+            ; FUNCTION motor3_b (BEGIN)
+                                           ; SOURCE LINE # 399 
+0000 7B05           MOV    R3,#005H
+0002 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0133H)
+0004 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0133H)
+0006 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 400 
+0009 E4             CLR    A
+000A FE             MOV    R6,A
+000B 7F01           MOV    R7,#001H
+000D 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 402 
+0010 7900    R      MOV    R1,#distancia
+0012 120000  R      LCALL  STACKPREP4?C
+0015 120000  R      LCALL  MV4_I12SK?C
+0018 7B05           MOV    R3,#005H
+001A 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0199H)
+001C 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0199H)
+001E 120000  R      LCALL  ?printf
+0021 74FC           MOV    A,#0FCH
+0023 2581           ADD    A,SP
+0025 F581           MOV    SP,A
+                                           ; SOURCE LINE # 403 
+0027 120000  R      LCALL  espera_3
+                                           ; SOURCE LINE # 404 
+002A 7B05           MOV    R3,#005H
+002C 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+002E 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+0030 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 405 
+0033 22             RET    
+
+            ; FUNCTION motor3_b (END)
+
+            ; FUNCTION motor3_bf (BEGIN)
+                                           ; SOURCE LINE # 408 
+0000 7B05           MOV    R3,#005H
+0002 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 0133H)
+0004 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 0133H)
+0006 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 409 
+0009 E4             CLR    A
+000A FE             MOV    R6,A
+000B 7F01           MOV    R7,#001H
+000D 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 411 
+0010 7900    R      MOV    R1,#distancia
+0012 120000  R      LCALL  STACKPREP4?C
+0015 120000  R      LCALL  MV4_I12SK?C
+0018 7B05           MOV    R3,#005H
+001A 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 01C8H)
+001C 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 01C8H)
+001E 120000  R      LCALL  ?printf
+0021 74FC           MOV    A,#0FCH
+0023 2581           ADD    A,SP
+0025 F581           MOV    SP,A
+                                           ; SOURCE LINE # 412 
+0027 7B05           MOV    R3,#005H
+0029 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 01F6H)
+002B 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 01F6H)
+002D 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 413 
+0030 E4             CLR    A
+0031 FE             MOV    R6,A
+0032 7F01           MOV    R7,#001H
+0034 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 414 
+0037 7B05           MOV    R3,#005H
+0039 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 01FCH)
+003B 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 01FCH)
+003D 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 415 
+0040 120000  R      LCALL  espera_3
+                                           ; SOURCE LINE # 417 
+0043 7B05           MOV    R3,#005H
+0045 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 00CH)
+0047 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 00CH)
+0049 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 418 
+004C 7B05           MOV    R3,#005H
+004E 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 012H)
+0050 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 012H)
+0052 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 419 
+0055 22             RET    
+
+            ; FUNCTION motor3_bf (END)
+
+            ; FUNCTION espera_1 (BEGIN)
+                                           ; SOURCE LINE # 422 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+0007         ?WHILE57:
+                                           ; SOURCE LINE # 423 
+0007 20A4FD         JB     out_d1,?WHILE57
+                                           ; SOURCE LINE # 424 
+000A C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 425 
+000C 22             RET    
+
+            ; FUNCTION espera_1 (END)
+
+            ; FUNCTION espera_2 (BEGIN)
+                                           ; SOURCE LINE # 428 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+0007         ?WHILE59:
+                                           ; SOURCE LINE # 429 
+0007 2086FD         JB     out_d2,?WHILE59
+                                           ; SOURCE LINE # 430 
+000A C287           CLR    trg_d2
+                                           ; SOURCE LINE # 431 
+000C 22             RET    
+
+            ; FUNCTION espera_2 (END)
+
+            ; FUNCTION espera_3 (BEGIN)
+                                           ; SOURCE LINE # 434 
+0000 E4             CLR    A
+0001 FE             MOV    R6,A
+0002 7F01           MOV    R7,#001H
+0004 120000  R      LCALL  _time
+0007         ?WHILE61:
+                                           ; SOURCE LINE # 435 
+0007 2085FD         JB     out_d3,?WHILE61
+                                           ; SOURCE LINE # 436 
+000A 22             RET    
+
+            ; FUNCTION espera_3 (END)
+
+            ; FUNCTION furar (BEGIN)
+                                           ; SOURCE LINE # 439 
+0000 D2B4           SETB   luz
+                                           ; SOURCE LINE # 440 
+0002 D290           SETB   sirene
+                                           ; SOURCE LINE # 441 
+0004 7900    R      MOV    R1,#fuso
+0006 120000  R      LCALL  STACKPREP4?C
+0009 120000  R      LCALL  MV4_I12SK?C
+000C E4             CLR    A
+000D FC             MOV    R4,A
+000E FD             MOV    R5,A
+000F FE             MOV    R6,A
+0010 7F64           MOV    R7,#064H
+0012 120000  R      LCALL  ?C_LMUL
+0015 7800    R      MOV    R0,#distancia
+0017 120000  R      LCALL  MV4_RG2I0?C
+                                           ; SOURCE LINE # 442 
+001A 120000  R      LCALL  motor3_b
+                                           ; SOURCE LINE # 443 
+001D 7900    R      MOV    R1,#fuso
+001F 120000  R      LCALL  STACKPREP4?C
+0022 120000  R      LCALL  MV4_I12SK?C
+0025 E4             CLR    A
+0026 FE             MOV    R6,A
+0027 FC             MOV    R4,A
+0028 FD             MOV    R5,A
+0029 7F32           MOV    R7,#032H
+002B 120000  R      LCALL  ?C_LMUL
+002E 7800    R      MOV    R0,#distancia
+0030 120000  R      LCALL  MV4_RG2I0?C
+                                           ; SOURCE LINE # 444 
+0033 120000  R      LCALL  motor3_bf
+                                           ; SOURCE LINE # 445 
+0036 7900    R      MOV    R1,#fuso
+0038 120000  R      LCALL  STACKPREP4?C
+003B 120000  R      LCALL  MV4_I12SK?C
+003E E4             CLR    A
+003F FE             MOV    R6,A
+0040 FC             MOV    R4,A
+0041 FD             MOV    R5,A
+0042 7F96           MOV    R7,#096H
+0044 120000  R      LCALL  ?C_LMUL
+0047 7800    R      MOV    R0,#distancia
+0049 120000  R      LCALL  MV4_RG2I0?C
+                                           ; SOURCE LINE # 446 
+004C 120000  R      LCALL  motor3_cf
+                                           ; SOURCE LINE # 447 
+004F C2B4           CLR    luz
+                                           ; SOURCE LINE # 448 
+0051 C290           CLR    sirene
+                                           ; SOURCE LINE # 449 
+0053 22             RET    
+
+            ; FUNCTION furar (END)
+
+            ; FUNCTION _time (BEGIN)
+              ; Register R6R7 is assigned to parameter h
+              ; R4R5 is assigned to f
+0000         ?WHILE64:
+                                           ; SOURCE LINE # 454 
+0000 EE             MOV    A,R6
+0001 4F             ORL    A,R7
+0002 6022           JZ     ?NXT104
+                                           ; SOURCE LINE # 456 
+0004 EF             MOV    A,R7
+0005 1F             DEC    R7
+0006 7001           JNZ    ?LAB45
+0008 1E             DEC    R6
+0009         ?LAB45:
+                                           ; SOURCE LINE # 457 
+0009 E4             CLR    A
+000A FC             MOV    R4,A
+000B 7D04           MOV    R5,#004H
+000D         ?WHILE65:
+                                           ; SOURCE LINE # 458 
+000D EC             MOV    A,R4
+000E 4D             ORL    A,R5
+000F 60EF           JZ     ?WHILE64
+                                           ; SOURCE LINE # 460 
+0011 7B07           MOV    R3,#007H
+0013 7AE1           MOV    R2,#0E1H
+0015         ?NXT107:
+0015 DBFE           DJNZ   R3,?NXT107
+0017 DAFC           DJNZ   R2,?NXT107
+0019 7500E0  R      MOV    g,#0E0H
+001C 750007  R      MOV    g+01H,#007H
+                                           ; SOURCE LINE # 462 
+001F ED             MOV    A,R5
+0020 1D             DEC    R5
+0021 70EA           JNZ    ?WHILE65
+0023 1C             DEC    R4
+0024 80E7           SJMP   ?WHILE65
+0026         ?NXT104:
+                                           ; SOURCE LINE # 466 
+0026 22             RET    
+
+            ; FUNCTION _time (END)
+
+            ; FUNCTION posicao_driver (BEGIN)
+                                           ; SOURCE LINE # 470 
+0000 7B05           MOV    R3,#005H
+0002 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 022EH)
+0004 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 022EH)
+0006 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 471 
+0009 E4             CLR    A
+000A FE             MOV    R6,A
+000B 7F01           MOV    R7,#001H
+000D 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 472 
+0010 D2A0           SETB   trg_d1
+                                           ; SOURCE LINE # 473 
+0012 C299           CLR    TI
+                                           ; SOURCE LINE # 474 
+0014 D2AC           SETB   ES
+                                           ; SOURCE LINE # 475 
+0016 C200    R      CLR    motor
+                                           ; SOURCE LINE # 476 
+0018 C200    R      CLR    enable
+                                           ; SOURCE LINE # 477 
+001A E4             CLR    A
+001B F500    R      MOV    indice,A
+001D         ?WHILE68:
+                                           ; SOURCE LINE # 479 
+001D E500    R      MOV    A,indice
+001F 33             RLC    A
+0020 95E0           SUBB   A,ACC
+0022 6480           XRL    A,#080H
+0024 B48006         CJNE   A,#080H,?LAB54
+0027 E500    R      MOV    A,indice
+0029 B40A01         CJNE   A,#00AH,?LAB54
+002C D3             SETB   C
+002D         ?LAB54:
+002D 40EE           JC     ?WHILE68
+                                           ; SOURCE LINE # 480 
+002F C2AC           CLR    ES
+                                           ; SOURCE LINE # 481 
+0031 7900    R      MOV    R1,#temp+0BH
+0033 7700           MOV    @R1,#000H
+                                           ; SOURCE LINE # 482 
+0035 D299           SETB   TI
+                                           ; SOURCE LINE # 483 
+0037 C2A0           CLR    trg_d1
+                                           ; SOURCE LINE # 485 
+0039 7B01           MOV    R3,#001H
+003B 7900    R      MOV    R1,#temp
+003D E4             CLR    A
+003E FA             MOV    R2,A
+003F 120000  R      LCALL  ?atol
+0042 E500    R      MOV    A,posicao+01H
+0044 23             RL     A
+0045 23             RL     A
+0046 54FC           ANL    A,#0FCH
+0048 2400    R      ADD    A,#m1
+004A F8             MOV    R0,A
+004B 120000  R      LCALL  MV4_RG2I0?C
+                                           ; SOURCE LINE # 487 
+004E 7B05           MOV    R3,#005H
+0050 7A00    R      MOV    R2,#HIGH(?STR?CONTROLE?BASE + 023AH)
+0052 7900    R      MOV    R1,#LOW(?STR?CONTROLE?BASE + 023AH)
+0054 120000  R      LCALL  ?printf
+                                           ; SOURCE LINE # 488 
+0057 E4             CLR    A
+0058 FE             MOV    R6,A
+0059 7F01           MOV    R7,#001H
+005B 120000  R      LCALL  _time
+                                           ; SOURCE LINE # 489 
+005E D287           SETB   trg_d2
+                                           ; SOURCE LINE # 490 
+0060 C299           CLR    TI
+                                           ; SOURCE LINE # 491 
+0062 D2AC           SETB   ES
+                                           ; SOURCE LINE # 492 
+0064 D200    R      SETB   motor
+                                           ; SOURCE LINE # 493 
+0066 C200    R      CLR    enable
+                                           ; SOURCE LINE # 494 
+0068 E4             CLR    A
+0069 F500    R      MOV    indice,A
+006B         ?WHILE69:
+                                           ; SOURCE LINE # 496 
+006B E500    R      MOV    A,indice
+006D 33             RLC    A
+006E 95E0           SUBB   A,ACC
+0070 6480           XRL    A,#080H
+0072 B48006         CJNE   A,#080H,?LAB56
+0075 E500    R      MOV    A,indice
+0077 B40A01         CJNE   A,#00AH,?LAB56
+007A D3             SETB   C
+007B         ?LAB56:
+007B 40EE           JC     ?WHILE69
+                                           ; SOURCE LINE # 497 
+007D C2AC           CLR    ES
+                                           ; SOURCE LINE # 498 
+007F 7900    R      MOV    R1,#temp+0BH
+0081 7700           MOV    @R1,#000H
+                                           ; SOURCE LINE # 499 
+0083 D299           SETB   TI
+                                           ; SOURCE LINE # 500 
+0085 C287           CLR    trg_d2
+                                           ; SOURCE LINE # 502 
+0087 7B01           MOV    R3,#001H
+0089 7900    R      MOV    R1,#temp
+008B E4             CLR    A
+008C FA             MOV    R2,A
+008D 120000  R      LCALL  ?atol
+0090 E500    R      MOV    A,posicao+01H
+0092 23             RL     A
+0093 23             RL     A
+0094 54FC           ANL    A,#0FCH
+0096 2400    R      ADD    A,#m2
+0098 F8             MOV    R0,A
+0099 120000  R      LCALL  MV4_RG2I0?C
+                                           ; SOURCE LINE # 503 
+009C 0500    R      INC    posicao+01H
+009E E500    R      MOV    A,posicao+01H
+00A0 7002           JNZ    ?LAB58
+00A2 0500    R      INC    posicao
+00A4         ?LAB58:
+                                           ; SOURCE LINE # 504 
+00A4 850000  R      MOV    maximo,posicao
+00A7 850000  R      MOV    maximo+01H,posicao+01H
+                                           ; SOURCE LINE # 505 
+00AA 22             RET    
+
+            ; FUNCTION posicao_driver (END)
+
+            ; FUNCTION ler_serial (BEGIN)
+                                           ; SOURCE LINE # 506 
+0000 C0E0           PUSH   ACC
+0002 C0D0           PUSH   PSW
+0004 C000           PUSH   AR0
+0006 C001           PUSH   AR1
+                                           ; SOURCE LINE # 508 
+0008 C2AC           CLR    ES
+                                           ; SOURCE LINE # 509 
+000A E599           MOV    A,SBUF
+000C 642D           XRL    A,#02DH
+000E 6005           JZ     ?LAB63
+0010 E599           MOV    A,SBUF
+0012 B42B02         CJNE   A,#02BH,?NXT117
+0015         ?LAB63:
+0015 D200    R      SETB   enable
+0017         ?NXT117:
+                                           ; SOURCE LINE # 510 
+0017 300018  R      JNB    enable,?NXT118
+                                           ; SOURCE LINE # 512 
+001A 200009  R      JB     motor,?NXT119
+                                           ; SOURCE LINE # 514 
+001D E500    R      MOV    A,indice
+001F 2400    R      ADD    A,#temp
+0021 F8             MOV    R0,A
+0022 A699           MOV    @R0,SBUF
+                                           ; SOURCE LINE # 515 
+0024 0500    R      INC    indice
+0026         ?NXT119:
+                                           ; SOURCE LINE # 517 
+0026 300009  R      JNB    motor,?NXT118
+                                           ; SOURCE LINE # 519 
+0029 E500    R      MOV    A,indice
+002B 2400    R      ADD    A,#temp
+002D F8             MOV    R0,A
+002E A699           MOV    @R0,SBUF
+                                           ; SOURCE LINE # 520 
+0030 0500    R      INC    indice
+0032         ?NXT118:
+                                           ; SOURCE LINE # 523 
+0032 C298           CLR    RI
+                                           ; SOURCE LINE # 524 
+0034 D2AC           SETB   ES
+0036 D001           POP    AR1
+0038 D000           POP    AR0
+003A D0D0           POP    PSW
+003C D0E0           POP    ACC
+                                           ; SOURCE LINE # 525 
+003E 32             RETI   
+
+            ; FUNCTION ler_serial (END)
+
+RC51 COMPILER V03.03.37,  CONTROLE                05/24/07  10:54:36  PAGE  3
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+dyn_alloc. . . . . . . . . . . . . . .  * TAG * -----   STRUCT  -----   8    
+  next . . . . . . . . . . . . . . . .  MEMBER  -----   PTR     0000H   2    
+  prev . . . . . . . . . . . . . . . .  MEMBER  -----   PTR     0002H   2    
+  len. . . . . . . . . . . . . . . . .  MEMBER  -----   U_INT   0004H   2    
+  mem. . . . . . . . . . . . . . . . .  MEMBER  -----   ARRAY   0006H   2    
+distancia. . . . . . . . . . . . . . .  PUBLIC  DATA    U_LONG  0000H   4    
+fuso . . . . . . . . . . . . . . . . .  PUBLIC  DATA    U_LONG  0004H   4    
+dado . . . . . . . . . . . . . . . . .  PUBLIC  DATA    U_CHAR  0008H   1    
+indice . . . . . . . . . . . . . . . .  PUBLIC  DATA    CHAR    0009H   1    
+enable . . . . . . . . . . . . . . . .  PUBLIC  DATA    BIT     0000H   1    
+motor. . . . . . . . . . . . . . . . .  PUBLIC  DATA    BIT     0001H   1    
+motores. . . . . . . . . . . . . . . .  PUBLIC  DATA    BIT     0002H   1    
+autonomo . . . . . . . . . . . . . . .  PUBLIC  DATA    BIT     0003H   1    
+posicao. . . . . . . . . . . . . . . .  PUBLIC  DATA    INT     000AH   2    
+maximo . . . . . . . . . . . . . . . .  PUBLIC  DATA    INT     000CH   2    
+temp . . . . . . . . . . . . . . . . .  PUBLIC  IDATA   ARRAY   0000H   12   
+m1 . . . . . . . . . . . . . . . . . .  PUBLIC  IDATA   ARRAY   000CH   88   
+m2 . . . . . . . . . . . . . . . . . .  PUBLIC  IDATA   ARRAY   0064H   88   
+main . . . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+scanear_controle . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+frente . . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+direita. . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+esquerda . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+traz . . . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+automatico . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+motor_a. . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+motor3_c . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+motor3_cf. . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+motor3_b . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+motor3_bf. . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+espera_1 . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+espera_2 . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+espera_3 . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+furar. . . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+time . . . . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+  h?090. . . . . . . . . . . . . . . .  PARAM   DATA    INT     0000H   2    
+  h?090. . . . . . . . . . . . . . . .  PARAM   DATA    INT     0000H   2    
+f?091. . . . . . . . . . . . . . . . .  AUTO    DATA    INT     0000H   2    
+g?092. . . . . . . . . . . . . . . . .  AUTO    DATA    INT     0000H   2    
+posicao_driver . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+ler_serial . . . . . . . . . . . . . .  PUBLIC  CODE    PROC    -----   -----
+printf . . . . . . . . . . . . . . . .  EXTERN  CODE    PROC    -----   -----
+atol . . . . . . . . . . . . . . . . .  EXTERN  CODE    PROC    -----   -----
+RC51 COMPILER V03.03.37,  CONTROLE                05/24/07  10:54:36  PAGE  4
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1801    ----
+   CONSTANT SIZE    =    582    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14       4
+   IDATA SIZE       =    188    ----
+   BIT SIZE         =      4    ----
+END OF MODULE INFORMATION.
+
+RC51 COMPILATION COMPLETE.  1 WARNING,  0 ERROR

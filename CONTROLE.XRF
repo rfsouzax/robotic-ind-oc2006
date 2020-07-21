@@ -1,0 +1,74 @@
+WIN32 LX51 CODE BANKING LINKER/LOCATOR V05.01.24
+
+
+INTER-MODULE CROSS-REFERENCE LISTING
+------------------------------------
+
+          NAME. . . . . . . . USAGE   MODULE NAMES
+          ----------------------------------------
+          ?atol . . . . . . . CODE    [ATOL]:  CONTROLE
+          ?C_INITSEGSTART . . CODE    [_C_INITD]:  C0S
+          ?C_LMUL . . . . . . CODE    [MULL]:  CONTROLE
+          ?C_START  . . . . . CODE    [C0S]: 
+          ?C_START0 . . . . . CODE    [C0S]:  CONTROLE
+          ?isdigit  . . . . . CODE    [ISDIG]:  ATOL
+          ?isspace  . . . . . CODE    [ISSPACE]:  ATOL
+          ?printf2  . . . . . CODE    [PRINT2]:  CONTROLE
+          ?sprintf2 . . . . . CODE    [PRINT2]: 
+          automatico  . . . . CODE    [CONTROLE]:  CONTROLE
+          autonomo  . . . . . BIT     [CONTROLE]: 
+          dado  . . . . . . . DATA    [CONTROLE]: 
+          direita . . . . . . CODE    [CONTROLE]:  CONTROLE
+          distancia . . . . . DATA    [CONTROLE]: 
+          enable  . . . . . . BIT     [CONTROLE]: 
+          espera_1  . . . . . CODE    [CONTROLE]:  CONTROLE
+          espera_2  . . . . . CODE    [CONTROLE]:  CONTROLE
+          espera_3  . . . . . CODE    [CONTROLE]:  CONTROLE
+          esquerda  . . . . . CODE    [CONTROLE]:  CONTROLE
+          frente  . . . . . . CODE    [CONTROLE]:  CONTROLE
+          furar . . . . . . . CODE    [CONTROLE]:  CONTROLE
+          fuso  . . . . . . . DATA    [CONTROLE]: 
+          HPD_ADDR  . . . . . DATA    [HPD]:  C0S
+          IDATALEN  . . . . . NUMBER  [_C_IDATALEN]:  C0S
+          indice  . . . . . . DATA    [CONTROLE]: 
+          IPGN0?C . . . . . . CODE    [IPGN0]:  IPGN0_INC
+          IPGN0INC?C  . . . . CODE    [IPGN0_INC]:  PRINT2
+          IPGN1?C . . . . . . CODE    [IPGN1]:  IPGN1_INC
+          IPGN1INC?C  . . . . CODE    [IPGN1_INC]:  ATOL
+          ler_serial  . . . . CODE    [CONTROLE]: 
+          m1  . . . . . . . . IDATA   [CONTROLE]: 
+          m2  . . . . . . . . IDATA   [CONTROLE]: 
+          main  . . . . . . . CODE    [CONTROLE]:  C0S
+          maximo  . . . . . . DATA    [CONTROLE]: 
+          motor . . . . . . . BIT     [CONTROLE]: 
+          motor3_b  . . . . . CODE    [CONTROLE]: 
+          motor3_bf . . . . . CODE    [CONTROLE]: 
+          motor3_c  . . . . . CODE    [CONTROLE]: 
+          motor3_cf . . . . . CODE    [CONTROLE]: 
+          motores . . . . . . BIT     [CONTROLE]: 
+          motor_a . . . . . . CODE    [CONTROLE]:  CONTROLE
+          MV4_I02SK?C . . . . CODE    [MV_I02SK4]:  CONTROLE
+          MV4_I12SK?C . . . . CODE    [MV_I12SK4]:  CONTROLE
+          MV4_RG2I0?C . . . . CODE    [MV_RG2I04]:  CONTROLE
+          MV4_RG2I1?C . . . . CODE    [MV_RG2I14]:  CONTROLE
+          posicao . . . . . . DATA    [CONTROLE]: 
+          posicao_driver  . . CODE    [CONTROLE]:  CONTROLE
+          RST_STK4?C  . . . . CODE    [RSTSTK4]:  MULL
+          scanear_controle  . CODE    [CONTROLE]:  CONTROLE
+          STACKPREP4?C  . . . CODE    [MV_STK4]:  CONTROLE
+          STACKPREP?C . . . . CODE    [MV_STK4]: 
+          temp  . . . . . . . IDATA   [CONTROLE]: 
+          TIM1_INIT . . . . . NUMBER  [_C_ITIM1]:  C0S
+          traz  . . . . . . . CODE    [CONTROLE]:  CONTROLE
+          XPGN0?C . . . . . . CODE    [XPGN0]:  XPGN0_INC
+          XPGN0INC?C  . . . . CODE    [XPGN0_INC]:  PRINT2
+          XPGN1?C . . . . . . CODE    [XPGN1]:  XPGN1_INC
+          XPGN1INC?C  . . . . CODE    [XPGN1_INC]:  PRINT2
+          _INITP2?  . . . . . NUMBER  [_C_IDATALEN]:  C0S
+          _MV_I02SK_0 . . . . CODE    [MV_I02SK4]: 
+          _MV_I12SK_0 . . . . CODE    [MV_I12SK4]: 
+          _putchar  . . . . . CODE    [PUTCHAR]:  PRINT2
+          _STACK  . . . . . . IDATA   [CONTROLE]:  C0S
+          _time . . . . . . . CODE    [CONTROLE]:  CONTROLE
+          __PGN0_INC__  . . . CODE    [PGN0_INC]:  IPGN0_INC, XPGN0_INC
+          __PGN1_INC__  . . . CODE    [PGN1_INC]:  IPGN1_INC, XPGN1_INC
